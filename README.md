@@ -2,6 +2,11 @@
 
 Tauri v2 + React 19 で作成した MongoDB GUI クライアント。
 
+**他言語版 / Other languages:**
+[English](README.en.md) | [中文（简体）](README.zh-CN.md) | [中文（繁體）](README.zh-TW.md) | [한국어](README.ko.md)
+
+---
+
 ## 機能
 
 - MongoDB への接続・切断（複数接続設定の管理）
@@ -9,10 +14,12 @@ Tauri v2 + React 19 で作成した MongoDB GUI クライアント。
 - ドキュメントの一覧表示・ページネーション（50件/ページ）
 - ドキュメントの追加・編集・削除
 - コレクションの作成・削除
+- データベースのダンプ（ZIP）/ リストア（ZIP）
 - Extended JSON 形式でのエクスポート / インポート（`$oid`・`$date` 保持）
 - 認証（ユーザー名・パスワード・認証 DB 指定）
 - TLS/SSL 接続（CA 証明書・クライアント証明書対応、自己署名証明書許可）
 - SSH トンネル経由接続（鍵認証・パスワード認証）
+- **UI 多言語対応**：日本語 / English / 中文（简体）/ 中文（繁體）/ 한국어
 
 ## 必要環境
 
@@ -69,6 +76,10 @@ cargo check --manifest-path src-tauri/Cargo.toml   # Rust
 | SSH トンネル | ホスト・ポート・ユーザー名・鍵ファイルまたはパスワード |
 
 接続設定は `~/.local/share/info.okazoh.okzmongo/connections.json` に保存されます。
+
+## 言語設定
+
+右上のセレクタから UI の表示言語を切り替えられます。選択した言語はブラウザのローカルストレージに保存されます。初回起動時はシステムの言語設定（`navigator.language`）が自動的に使用されます。
 
 ## アーキテクチャ
 

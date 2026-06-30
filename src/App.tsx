@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ConnectionConfig, SelectedItem } from "./types";
+import { useI18n, LOCALES } from "./i18n";
 import Sidebar from "./components/Sidebar";
 import DocumentList from "./components/DocumentList";
 import About from "./components/About";
 
 export default function App() {
+  const { t, locale, setLocale } = useI18n();
   const [connections, setConnections] = useState<ConnectionConfig[]>([]);
   const [connectedIds, setConnectedIds] = useState<string[]>([]);
   const [selected, setSelected] = useState<SelectedItem | null>(null);
   const [filterJson, setFilterJson] = useState("{}");
   const [filterInput, setFilterInput] = useState("{}");
   const [showAbout, setShowAbout] = useState(false);
+  const [showLangPicker, setShowLangPicker] = useState(false);
 
   const loadConnections = async () => {
     const conns: ConnectionConfig[] = await invoke("list_connections");
@@ -73,7 +76,7 @@ export default function App() {
         <button
           onClick={() => setShowAbout(true)}
           style={{ fontSize: 11, padding: "2px 8px", opacity: 0.7 }}
-          title="OkzMongo について"
+          title={t.about}
         >?</button>
       </div>
 
@@ -120,8 +123,8 @@ export default function App() {
                   style={{ flex: 1, fontFamily: "monospace" }}
                   onKeyDown={e => e.key === "Enter" && setFilterJson(filterInput)}
                 />
-                <button className="primary" onClick={() => setFilterJson(filterInput)}>検索</button>
-                <button onClick={() => { setFilterInput("{}"); setFilterJson("{}"); }}>クリア</button>
+                <button className="primary" onClick={() => setFilterJson(filterInput)}>{t.search}</button>
+                <button onClick={() => { setFilterInput("{}"); setFilterJson("{}"); }}>{t.clear}</button>
               </div>
 
               <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
@@ -142,10 +145,65 @@ export default function App() {
               color: "var(--text-muted)",
               fontSize: 13,
             }}>
-              左のサイドバーから接続してコレクションを選択してください
+              {t.selectCollection}
             </div>
           )}
         </div>
+      </div>
+
+      {/* ステータスバー */}
+      <div style={{
+        background: "var(--bg3)",
+        borderTop: "1px solid var(--border)",
+        height: 24,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 8px",
+        flexShrink: 0,
+        position: "relative",
+      }}>
+        <button
+          onClick={() => setShowLangPicker(p => !p)}
+          title={t.langLabel}
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: 14, padding: "0 4px", color: "var(--text-muted)", lineHeight: 1,
+          }}
+        >🌐</button>
+        {showLangPicker && (
+          <>
+            <div
+              onClick={() => setShowLangPicker(false)}
+              style={{ position: "fixed", inset: 0, zIndex: 99 }}
+            />
+            <div style={{
+              position: "absolute",
+              bottom: 28,
+              left: 0,
+              background: "var(--bg2)",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              overflow: "hidden",
+              zIndex: 100,
+              minWidth: 160,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            }}>
+              {LOCALES.map(l => (
+                <button
+                  key={l.value}
+                  onClick={() => { setLocale(l.value); setShowLangPicker(false); }}
+                  style={{
+                    display: "block", width: "100%", textAlign: "left",
+                    padding: "6px 16px",
+                    background: l.value === locale ? "var(--accent)" : "none",
+                    color: l.value === locale ? "white" : "var(--text)",
+                    border: "none", cursor: "pointer", fontSize: 13,
+                  }}
+                >{l.label}</button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
       {showAbout && <About onClose={() => setShowAbout(false)} />}
     </div>

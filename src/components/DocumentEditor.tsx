@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useI18n } from "../i18n";
 
 interface Props {
   connectionId: string;
@@ -20,6 +21,7 @@ export default function DocumentEditor({
   onSaved,
   onClose,
 }: Props) {
+  const { t } = useI18n();
   const [json, setJson] = useState(JSON.stringify(initialDoc, null, 2));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -29,7 +31,7 @@ export default function DocumentEditor({
     try {
       parsed = JSON.parse(json);
     } catch {
-      setError("JSONの構文が正しくありません");
+      setError(t.invalidJson);
       return;
     }
 
@@ -89,7 +91,7 @@ export default function DocumentEditor({
           display: "flex",
           justifyContent: "space-between",
         }}>
-          <span>{isNew ? "ドキュメント追加" : "ドキュメント編集"}</span>
+          <span>{isNew ? t.addDocTitle : t.editDocTitle}</span>
           <button onClick={onClose} style={{ background: "none", fontSize: 16 }}>✕</button>
         </div>
 
@@ -128,9 +130,9 @@ export default function DocumentEditor({
           gap: 8,
           justifyContent: "flex-end",
         }}>
-          <button onClick={onClose}>キャンセル</button>
+          <button onClick={onClose}>{t.cancel}</button>
           <button className="primary" onClick={handleSave} disabled={saving}>
-            {saving ? "保存中..." : "保存"}
+            {saving ? t.saving : t.save}
           </button>
         </div>
       </div>

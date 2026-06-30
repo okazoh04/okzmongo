@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { ConnectionConfig, SelectedItem, defaultConnection } from "../types";
 import { ConnectionForm } from "./ConnectionForm";
+import { useI18n } from "../i18n";
 
 interface Props {
   connections: ConnectionConfig[];
@@ -23,6 +24,7 @@ export default function Sidebar({
   onDisconnect,
   onRefresh,
 }: Props) {
+  const { t, tpl } = useI18n();
   const [expandedDbs, setExpandedDbs] = useState<Record<string, Set<string>>>({});
   const [collections, setCollections] = useState<Record<string, string[]>>({});
   const [databases, setDatabases] = useState<Record<string, string[]>>({});
@@ -30,7 +32,6 @@ export default function Sidebar({
   const [connError, setConnError] = useState<Record<string, string>>({});
   const [editTarget, setEditTarget] = useState<"new" | string | null>(null);
 
-  // 接続が増えたら自動でDBリストを読む
   useEffect(() => {
     for (const id of connectedIds) {
       if (!databases[id]) loadDatabases(id);
@@ -51,11 +52,7 @@ export default function Sidebar({
     setExpandedDbs(prev => {
       const next = { ...prev };
       const set = new Set(next[connectionId] ?? []);
-      if (set.has(db)) {
-        set.delete(db);
-      } else {
-        set.add(db);
-      }
+      if (set.has(db)) { set.delete(db); } else { set.add(db); }
       next[connectionId] = set;
       return next;
     });
@@ -110,7 +107,7 @@ export default function Sidebar({
   };
 
   const handleRemove = async (id: string) => {
-    if (!confirm("この接続設定を削除しますか？")) return;
+    if (!confirm(t.deleteConnectionConfirm)) return;
     await invoke("remove_connection", { id });
     onRefresh();
   };
@@ -121,7 +118,7 @@ export default function Sidebar({
   };
 
   const handleDropCollection = async (connectionId: string, db: string, col: string) => {
-    if (!confirm(`コレクション "${col}" を削除しますか？`)) return;
+    if (!confirm(tpl(t.dropCollectionConfirm, { col }))) return;
     await invoke("drop_collection", { connectionId, dbName: db, collectionName: col });
     await refreshCollections(connectionId, db);
   };
@@ -134,13 +131,11 @@ export default function Sidebar({
     if (!path) return;
     try {
       const result: { collections: number; documents: number } = await invoke("dump_database", {
-        connectionId,
-        dbName: db,
-        filePath: path,
+        connectionId, dbName: db, filePath: path,
       });
-      alert(`ダンプ完了: ${result.collections} コレクション, ${result.documents.toLocaleString()} ドキュメント`);
+      alert(tpl(t.dumpSuccess, { col: result.collections, doc: result.documents.toLocaleString() }));
     } catch (e) {
-      alert(`ダンプ失敗: ${e}`);
+      alert(tpl(t.dumpFail, { error: String(e) }));
     }
   };
 
@@ -150,19 +145,14 @@ export default function Sidebar({
       multiple: false,
     });
     if (!path) return;
-    const dropBefore = confirm(
-      `DB "${db}" へリストアします。\n既存の同名コレクションを削除してから挿入しますか？\n（キャンセルで既存ドキュメントに追記）`
-    );
+    const dropBefore = confirm(tpl(t.restoreConfirm, { db }));
     try {
       const result: { collections: number; documents: number } = await invoke("restore_database", {
-        connectionId,
-        dbName: db,
-        filePath: path as string,
-        dropBefore,
+        connectionId, dbName: db, filePath: path as string, dropBefore,
       });
-      alert(`リストア完了: ${result.collections} コレクション, ${result.documents.toLocaleString()} ドキュメント`);
+      alert(tpl(t.restoreSuccess, { col: result.collections, doc: result.documents.toLocaleString() }));
     } catch (e) {
-      alert(`リストア失敗: ${e}`);
+      alert(tpl(t.restoreFail, { error: String(e) }));
     }
   };
 
@@ -174,13 +164,13 @@ export default function Sidebar({
         padding: "8px 10px", borderBottom: "1px solid var(--border)",
         background: "var(--bg3)", flexShrink: 0,
       }}>
-        <span style={{ color: "var(--accent)", fontWeight: 700, fontSize: 12, flex: 1 }}>接続</span>
+        <span style={{ color: "var(--accent)", fontWeight: 700, fontSize: 12, flex: 1 }}>{t.connections}</span>
         <button
           onClick={() => setEditTarget("new")}
           style={{ fontSize: 11, padding: "2px 8px" }}
           className="primary"
         >
-          + 追加
+          {t.addConnection}
         </button>
       </div>
 
@@ -195,7 +185,7 @@ export default function Sidebar({
           maxHeight: "60vh",
         }}>
           <div style={{ color: "var(--accent2)", fontWeight: 600, fontSize: 12, marginBottom: 8 }}>
-            {editTarget === "new" ? "新規接続" : "接続を編集"}
+            {editTarget === "new" ? t.newConnection : t.editConnection}
           </div>
           <ConnectionForm
             initial={
@@ -240,7 +230,7 @@ export default function Sidebar({
                     onClick={() => handleDisconnect(conn.id)}
                     style={{ fontSize: 10, padding: "1px 5px", color: "var(--red)", flexShrink: 0 }}
                   >
-                    切断
+                    {t.disconnect}
                   </button>
                 ) : (
                   <button
@@ -249,20 +239,20 @@ export default function Sidebar({
                     style={{ fontSize: 10, padding: "1px 5px", flexShrink: 0 }}
                     className="primary"
                   >
-                    {connecting === conn.id ? "…" : "接続"}
+                    {connecting === conn.id ? t.connecting : t.connect}
                   </button>
                 )}
                 <button
                   onClick={() => setEditTarget(conn.id)}
                   style={{ fontSize: 10, padding: "1px 5px", flexShrink: 0 }}
-                  title="編集"
+                  title={t.editConnection}
                 >
                   ✎
                 </button>
                 <button
                   onClick={() => handleRemove(conn.id)}
                   style={{ fontSize: 10, padding: "1px 5px", color: "var(--red)", flexShrink: 0 }}
-                  title="削除"
+                  title={t.deleteConnectionConfirm}
                 >
                   ✕
                 </button>
@@ -280,7 +270,7 @@ export default function Sidebar({
                 <div style={{ paddingLeft: 8 }}>
                   {dbs.length === 0 && (
                     <div style={{ color: "var(--text-muted)", fontSize: 11, padding: "4px 8px" }}>
-                      読込中...
+                      {t.loadingDbs}
                     </div>
                   )}
                   {dbs.map(db => {
@@ -316,7 +306,7 @@ export default function Sidebar({
 
         {connections.length === 0 && (
           <div style={{ color: "var(--text-muted)", textAlign: "center", padding: "24px 8px", fontSize: 11 }}>
-            「+ 追加」から接続先を登録してください
+            {t.noConnections}
           </div>
         )}
       </div>
@@ -339,6 +329,7 @@ function DbNode({
   onDump: () => void;
   onRestore: () => void;
 }) {
+  const { t } = useI18n();
   const [newColName, setNewColName] = useState("");
   const [showInput, setShowInput] = useState(false);
 
@@ -358,12 +349,12 @@ function DbNode({
         <button
           onClick={e => { e.stopPropagation(); onDump(); }}
           style={{ fontSize: 9, padding: "0 4px", background: "none", opacity: 0.6 }}
-          title="ダンプ（ZIP）"
+          title={t.dumpTitle}
         >⬇</button>
         <button
           onClick={e => { e.stopPropagation(); onRestore(); }}
           style={{ fontSize: 9, padding: "0 4px", background: "none", opacity: 0.6 }}
-          title="リストア（ZIP）"
+          title={t.restoreTitle}
         >⬆</button>
       </div>
 
@@ -385,7 +376,7 @@ function DbNode({
               <button
                 onClick={e => { e.stopPropagation(); onDropCollection(col); }}
                 style={{ fontSize: 9, padding: "0 3px", color: "var(--text-muted)", background: "none", opacity: 0.5 }}
-                title="削除"
+                title={t.deleteDoc}
               >
                 ✕
               </button>
@@ -397,7 +388,7 @@ function DbNode({
               <input
                 value={newColName}
                 onChange={e => setNewColName(e.target.value)}
-                placeholder="コレクション名"
+                placeholder={t.newCollectionPlaceholder}
                 style={{ flex: 1, fontSize: 11 }}
                 onKeyDown={e => {
                   if (e.key === "Enter" && newColName.trim()) {
@@ -416,7 +407,7 @@ function DbNode({
               onClick={() => setShowInput(true)}
               style={{ color: "var(--text-muted)", fontSize: 10, padding: "2px 6px", cursor: "pointer" }}
             >
-              + コレクション
+              {t.addCollection}
             </div>
           )}
         </div>

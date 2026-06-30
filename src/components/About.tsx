@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
+import { useI18n } from "../i18n";
 
 interface Props {
   onClose: () => void;
 }
 
 export default function About({ onClose }: Props) {
+  const { t } = useI18n();
   const [version, setVersion] = useState<string>("...");
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export default function About({ onClose }: Props) {
         <div style={{ fontSize: 36, marginBottom: 4 }}>🍃</div>
         <div style={{ fontWeight: 700, fontSize: 20, color: "var(--accent2)" }}>OkzMongo</div>
         <div style={{ fontSize: 13, color: "var(--text-sub)" }}>
-          MongoDB GUI クライアント
+          {t.appDescription}
         </div>
         <div style={{
           fontSize: 12,
@@ -49,7 +51,7 @@ export default function About({ onClose }: Props) {
           borderRadius: 4,
           padding: "4px 16px",
         }}>
-          バージョン {version}
+          {t.version} {version}
         </div>
         <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
           Tauri v2 + React 19 + MongoDB v3
@@ -58,7 +60,7 @@ export default function About({ onClose }: Props) {
           onClick={onClose}
           style={{ marginTop: 12, padding: "4px 24px" }}
         >
-          閉じる
+          {t.close}
         </button>
       </div>
     </div>

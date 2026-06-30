@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import DocumentEditor from "./DocumentEditor";
+import { useI18n } from "../i18n";
 
 interface Props {
   connectionId: string;
@@ -14,6 +15,7 @@ interface Props {
 const PAGE_SIZE = 50;
 
 export default function DocumentList({ connectionId, db, collection, filterJson }: Props) {
+  const { t, tpl } = useI18n();
   const [docs, setDocs] = useState<Record<string, unknown>[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -61,7 +63,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
   }, [load]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("このドキュメントを削除しますか？")) return;
+    if (!confirm(t.deleteDocConfirm)) return;
     try {
       await invoke("delete_document", { connectionId, dbName: db, collectionName: collection, id });
       load();
@@ -84,7 +86,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
       });
       if (path) {
         await writeTextFile(path, json);
-        setIoStatus({ msg: `エクスポート完了: ${path}`, ok: true });
+        setIoStatus({ msg: tpl(t.exportSuccess, { path }), ok: true });
       }
     } catch (e) {
       setIoStatus({ msg: String(e), ok: false });
@@ -106,7 +108,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
         collectionName: collection,
         jsonData,
       });
-      setIoStatus({ msg: `インポート完了: ${count.toLocaleString()} 件追加`, ok: true });
+      setIoStatus({ msg: tpl(t.importSuccess, { count: count.toLocaleString() }), ok: true });
       load();
     } catch (e) {
       setIoStatus({ msg: String(e), ok: false });
@@ -129,14 +131,14 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
         flexWrap: "wrap",
       }}>
         <span style={{ color: "var(--text-sub)", fontSize: 12, minWidth: 60 }}>
-          {loading ? "読込中..." : `${total.toLocaleString()} 件`}
+          {loading ? t.loading : tpl(t.docCount, { count: total.toLocaleString() })}
         </span>
         <div style={{ flex: 1 }} />
-        <button onClick={() => setShowNew(true)} className="primary" style={{ fontSize: 11 }}>+ 追加</button>
-        <button onClick={load} style={{ fontSize: 11 }}>↺ 更新</button>
+        <button onClick={() => setShowNew(true)} className="primary" style={{ fontSize: 11 }}>{t.addDoc}</button>
+        <button onClick={load} style={{ fontSize: 11 }}>{t.refresh}</button>
         <span style={{ color: "var(--border)" }}>|</span>
-        <button onClick={handleExport} style={{ fontSize: 11 }}>⬇ エクスポート</button>
-        <button onClick={handleImport} style={{ fontSize: 11 }}>⬆ インポート</button>
+        <button onClick={handleExport} style={{ fontSize: 11 }}>{t.exportBtn}</button>
+        <button onClick={handleImport} style={{ fontSize: 11 }}>{t.importBtn}</button>
       </div>
 
       {/* エラー / IO状態 */}
@@ -188,14 +190,14 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
               </pre>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
                 <button onClick={() => setEditDoc(doc)} style={{ fontSize: 11, padding: "3px 8px" }}>
-                  編集
+                  {t.editDoc}
                 </button>
                 {id && (
                   <button
                     onClick={() => handleDelete(id)}
                     style={{ fontSize: 11, padding: "3px 8px", color: "var(--red)" }}
                   >
-                    削除
+                    {t.deleteDoc}
                   </button>
                 )}
               </div>
@@ -205,7 +207,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
 
         {docs.length === 0 && !loading && (
           <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)" }}>
-            ドキュメントがありません
+            {t.noDocuments}
           </div>
         )}
       </div>
