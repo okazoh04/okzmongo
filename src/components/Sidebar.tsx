@@ -174,28 +174,43 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* 接続フォーム（インライン） */}
+      {/* 接続設定モーダル */}
       {editTarget !== null && (
-        <div style={{
-          borderBottom: "1px solid var(--border)",
-          background: "var(--bg2)",
-          padding: 10,
-          overflow: "auto",
-          flexShrink: 0,
-          maxHeight: "60vh",
-        }}>
-          <div style={{ color: "var(--accent2)", fontWeight: 600, fontSize: 12, marginBottom: 8 }}>
-            {editTarget === "new" ? t.newConnection : t.editConnection}
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 1000,
+            background: "rgba(0,0,0,0.55)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setEditTarget(null); }}
+        >
+          <div style={{
+            background: "var(--bg2)",
+            border: "1px solid var(--border)",
+            borderRadius: 6,
+            width: 500,
+            maxWidth: "92vw",
+            maxHeight: "90vh",
+            overflow: "auto",
+            padding: 20,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
+              <span style={{ color: "var(--accent2)", fontWeight: 700, fontSize: 13, flex: 1 }}>
+                {editTarget === "new" ? t.newConnection : t.editConnection}
+              </span>
+              <button onClick={() => setEditTarget(null)} style={{ fontSize: 12, padding: "2px 7px" }}>✕</button>
+            </div>
+            <ConnectionForm
+              initial={
+                editTarget === "new"
+                  ? defaultConnection()
+                  : connections.find(c => c.id === editTarget) ?? defaultConnection()
+              }
+              onSave={handleSave}
+              onCancel={() => setEditTarget(null)}
+            />
           </div>
-          <ConnectionForm
-            initial={
-              editTarget === "new"
-                ? defaultConnection()
-                : connections.find(c => c.id === editTarget) ?? defaultConnection()
-            }
-            onSave={handleSave}
-            onCancel={() => setEditTarget(null)}
-          />
         </div>
       )}
 

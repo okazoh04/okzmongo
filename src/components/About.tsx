@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { useI18n } from "../i18n";
+import icon from "../assets/icon.png";
 
 interface Props {
   onClose: () => void;
@@ -39,7 +40,7 @@ export default function About({ onClose }: Props) {
           gap: 12,
         }}
       >
-        <div style={{ fontSize: 36, marginBottom: 4 }}>🍃</div>
+        <img src={icon} alt="OkzMongo" style={{ width: 80, height: 80, borderRadius: 16, marginBottom: 4 }}/>
         <div style={{ fontWeight: 700, fontSize: 20, color: "var(--accent2)" }}>OkzMongo</div>
         <div style={{ fontSize: 13, color: "var(--text-sub)" }}>
           {t.appDescription}
