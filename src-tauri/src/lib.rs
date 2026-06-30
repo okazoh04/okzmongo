@@ -1,5 +1,6 @@
 mod commands;
 mod crypto;
+mod ssh_tunnel;
 mod state;
 
 use commands::{connection::*, database::*, export::*};
@@ -29,6 +30,7 @@ pub fn run() {
             connect,
             disconnect,
             list_connected_ids,
+            test_connection,
             // DB操作
             list_databases,
             list_collections,

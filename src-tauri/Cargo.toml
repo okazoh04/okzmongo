@@ -28,6 +28,9 @@ uuid = { version = "1", features = ["v4"] }
 aes-gcm = "0.10"
 base64 = "0.22"
 zip = "2"
+russh = "0.46"
+russh-keys = "0.46"
+async-trait = "0.1"
 
 [profile.dev]
 incremental = true

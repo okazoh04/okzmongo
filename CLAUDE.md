@@ -41,11 +41,12 @@ React UI
 
 | ファイル | 役割 |
 |---|---|
-| `state.rs` | `AppState`（接続設定・アクティブクライアント・SSH PID を `Mutex` で保持） |
-| `commands/connection.rs` | 接続管理：SSH トンネル起動・TLS オプション構築・MongoDB ping 確認 |
+| `state.rs` | `AppState`（接続設定・アクティブクライアント・SSH PID を `Mutex` で保持、暗号化鍵を `OnceLock` で保持） |
+| `crypto.rs` | AES-256-GCM によるパスワード暗号化/復号（`enc:` プレフィックスで暗号化済みを識別） |
+| `commands/connection.rs` | 接続管理：SSH トンネル起動・TLS オプション構築・MongoDB ping 確認、接続設定の保存/読み込み |
 | `commands/database.rs` | DB/コレクション操作：find・count・insert・update・delete・drop・create |
-| `commands/export.rs` | インポート/エクスポート：Extended JSON 形式（`$oid`・`$date` を保持） |
-| `lib.rs` | `tauri::generate_handler![]` でコマンド登録 |
+| `commands/export.rs` | コレクション単位のインポート/エクスポート（NDJSON）+ DB 単位のダンプ/リストア（ZIP） |
+| `lib.rs` | `tauri::generate_handler![]` でコマンド登録、起動時に暗号化鍵ロードと接続設定の復元 |
 
 **接続確立の流れ（`connect` コマンド）:**
 1. SSH 有効なら `ssh -N -L <local>:<mongo_host>:<mongo_port>` を spawn し、`std::mem::forget` でプロセスを保持（PID を `ssh_pids` に記録）
@@ -57,18 +58,26 @@ React UI
 
 **SSH パスワード認証**: `sshpass` コマンドが必要。鍵認証または SSH エージェントなら不要。
 
+**パスワード暗号化**: `crypto.rs` の `encrypt_opt`/`decrypt_opt` を使用。保存時は `enc:` プレフィックス付き Base64 文字列で保存。旧来の平文は `decrypt_opt` がフォールバックで素通しする。暗号化鍵は `~/.local/share/info.okazoh.okzmongo/key.bin` に格納。
+
 ### React フロントエンド (`src/`)
 
 | ファイル | 役割 |
 |---|---|
-| `types.ts` | `ConnectionConfig`・`AuthConfig`・`TlsConfig`・`SshConfig` の型定義（Rust の `state.rs` と対応） |
-| `App.tsx` | タブ管理（接続 / ブラウズ）・グローバル状態保持・フィルタ状態管理 |
-| `components/ConnectionManager.tsx` | 接続設定フォーム（基本・認証・TLS・SSH の4セクション）・接続一覧 |
-| `components/Sidebar.tsx` | DB/コレクションのツリー表示（遅延ロード）・コレクション作成/削除 |
+| `types.ts` | `ConnectionConfig`・`AuthConfig`・`TlsConfig`・`SshConfig`・`SelectedItem` の型定義（Rust の `state.rs` と対応） |
+| `i18n.ts` | ロケール型・メッセージ辞書・`useI18n()` フック・`tpl()` テンプレート関数 |
+| `I18nProvider.tsx` | ロケール状態管理、`localStorage` の `okzmongo-locale` キーで永続化、`navigator.language` で自動検出 |
+| `App.tsx` | レイアウト（タイトルバー・サイドバー・メインエリア・ステータスバー）・フィルタ状態管理・言語切替ピッカー |
+| `components/Sidebar.tsx` | 接続ツリー（接続 → DB → コレクション）・接続フォームのインライン展開・DB ダンプ/リストア |
+| `components/ConnectionForm.tsx` | 接続設定フォーム（基本・認証・TLS・SSH の4セクション） |
 | `components/DocumentList.tsx` | ドキュメント一覧・ページネーション（50件）・エクスポート/インポートボタン統合 |
 | `components/DocumentEditor.tsx` | ドキュメント追加・編集モーダル（JSON テキストエリア） |
+| `components/ExportImport.tsx` | コレクション単位のエクスポート/インポートUI |
+| `components/About.tsx` | Aboutダイアログ |
 
 **レイアウト**: CSS Flexbox のみ（外部UIライブラリなし）。CSS 変数でテーマ管理（`src/index.css` の `:root`）。
+
+**i18n**: `src/locales/` 配下に `ja.ts`・`en.ts`・`zh-CN.ts`・`zh-TW.ts`・`ko.ts`。`ja.ts` が型の基準（`Messages = typeof ja`）。文字列テンプレートは `tpl(t.someKey, { varName: value })` で `{varName}` を置換。
 
 ### Tauri 権限
 
@@ -90,4 +99,8 @@ React UI
 }
 ```
 
-接続設定は `~/.local/share/info.okazoh.okzmongo/connections.json` に JSON で永続化される。パスワードは平文保存。起動時に `setup` フックで読み込み、add/update/remove のたびに書き込む。
+接続設定は `~/.local/share/info.okazoh.okzmongo/connections.json` に JSON で永続化。パスワード類は AES-256-GCM 暗号化（`enc:` プレフィックス）して保存。起動時に `setup` フックで読み込み、add/update/remove のたびに書き込む。
+
+## i18n の拡張方法
+
+新しい文字列を追加するときは、まず `src/locales/ja.ts` にキーを追加し、他の4言語ファイルにも同一キーを追加する。`Messages = typeof ja` により TypeScript がキーの欠落を検出する。

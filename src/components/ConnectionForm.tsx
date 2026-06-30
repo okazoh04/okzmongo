@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { open } from "@tauri-apps/plugin-dialog";
+import { invoke } from "@tauri-apps/api/core";
 import { ConnectionConfig, AuthConfig, TlsConfig, SshConfig } from "../types";
+import { useI18n } from "../i18n";
 
 const inputStyle: React.CSSProperties = { width: "100%", marginBottom: 4 };
 const labelStyle: React.CSSProperties = { color: "var(--text-muted)", fontSize: 10, display: "block", marginBottom: 1 };
@@ -24,6 +27,31 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function FilePicker({ value, onChange, placeholder }: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const { t } = useI18n();
+  const browse = async () => {
+    const path = await open({ multiple: false });
+    if (typeof path === "string") onChange(path);
+  };
+  return (
+    <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+      <input
+        style={{ flex: 1 }}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+      <button type="button" onClick={browse} style={{ fontSize: 11, flexShrink: 0 }}>
+        {t.browseFile}
+      </button>
+    </div>
+  );
+}
+
 export function ConnectionForm({
   initial,
   onSave,
@@ -33,89 +61,133 @@ export function ConnectionForm({
   onSave: (c: Omit<ConnectionConfig, "id"> & { id?: string }) => void;
   onCancel: () => void;
 }) {
+  const { t, tpl } = useI18n();
   const [cfg, setCfg] = useState(initial);
-  const set = (patch: Partial<typeof cfg>) => setCfg(c => ({ ...c, ...patch }));
+  const [testState, setTestState] = useState<"idle" | "testing" | "ok" | "error">("idle");
+  const [testError, setTestError] = useState("");
 
+  const set = (patch: Partial<typeof cfg>) => setCfg(c => ({ ...c, ...patch }));
   const setAuth = (patch: Partial<AuthConfig>) => set({ auth: { ...cfg.auth!, ...patch } });
   const setTls  = (patch: Partial<TlsConfig>)  => set({ tls:  { ...cfg.tls!,  ...patch } });
   const setSsh  = (patch: Partial<SshConfig>)  => set({ ssh:  { ...cfg.ssh!,  ...patch } });
 
+  const handleTest = async () => {
+    setTestState("testing");
+    setTestError("");
+    try {
+      await invoke("test_connection", { config: cfg });
+      setTestState("ok");
+    } catch (e) {
+      setTestState("error");
+      setTestError(String(e));
+    }
+  };
+
+  const testColor = testState === "ok" ? "var(--green)" : testState === "error" ? "var(--red)" : "var(--text-muted)";
+  const testMsg = testState === "ok"
+    ? t.testConnectionOk
+    : testState === "error"
+    ? tpl(t.testConnectionFail, { error: testError })
+    : "";
+
   return (
     <div>
-      <Section title="基本">
-        <label style={labelStyle}>接続名</label>
+      <Section title={t.sectionBasic}>
+        <label style={labelStyle}>{t.labelName}</label>
         <input style={inputStyle} value={cfg.name} onChange={e => set({ name: e.target.value })} placeholder="My MongoDB" />
         <div style={{ display: "flex", gap: 4 }}>
           <div style={{ flex: 3 }}>
-            <label style={labelStyle}>ホスト</label>
+            <label style={labelStyle}>{t.labelHost}</label>
             <input style={{ width: "100%" }} value={cfg.host} onChange={e => set({ host: e.target.value })} placeholder="localhost" />
           </div>
           <div style={{ flex: 1 }}>
-            <label style={labelStyle}>ポート</label>
+            <label style={labelStyle}>{t.labelPort}</label>
             <input style={{ width: "100%" }} type="number" value={cfg.port}
               onChange={e => set({ port: parseInt(e.target.value) || 27017 })} />
           </div>
         </div>
       </Section>
 
-      <Section title="認証">
-        <Toggle label="認証を使用" checked={cfg.auth !== null}
+      <Section title={t.sectionAuth}>
+        <Toggle label={t.toggleAuth} checked={cfg.auth !== null}
           onChange={on => set({ auth: on ? { username: "", password: "", auth_db: "admin" } : null })} />
         {cfg.auth && (
           <>
-            <label style={labelStyle}>ユーザー名</label>
+            <label style={labelStyle}>{t.labelUsername}</label>
             <input style={inputStyle} value={cfg.auth.username} onChange={e => setAuth({ username: e.target.value })} />
-            <label style={labelStyle}>パスワード</label>
+            <label style={labelStyle}>{t.labelPassword}</label>
             <input style={inputStyle} type="password" value={cfg.auth.password} onChange={e => setAuth({ password: e.target.value })} />
-            <label style={labelStyle}>認証DB</label>
+            <label style={labelStyle}>{t.labelAuthDb}</label>
             <input style={inputStyle} value={cfg.auth.auth_db} onChange={e => setAuth({ auth_db: e.target.value })} placeholder="admin" />
           </>
         )}
       </Section>
 
-      <Section title="SSL / TLS">
-        <Toggle label="TLS を有効化" checked={cfg.tls !== null}
+      <Section title={t.sectionTls}>
+        <Toggle label={t.toggleTls} checked={cfg.tls !== null}
           onChange={on => set({ tls: on ? { enabled: true, ca_file: null, cert_key_file: null, allow_invalid_certs: false } : null })} />
         {cfg.tls && (
           <>
-            <Toggle label="無効な証明書を許可" checked={cfg.tls.allow_invalid_certs}
+            <Toggle label={t.toggleAllowInvalidCerts} checked={cfg.tls.allow_invalid_certs}
               onChange={v => setTls({ allow_invalid_certs: v })} />
-            <label style={labelStyle}>CA 証明書 (PEM)</label>
-            <input style={inputStyle} value={cfg.tls.ca_file ?? ""} onChange={e => setTls({ ca_file: e.target.value || null })} placeholder="/path/to/ca.pem" />
-            <label style={labelStyle}>クライアント証明書+秘密鍵 (PEM)</label>
-            <input style={inputStyle} value={cfg.tls.cert_key_file ?? ""} onChange={e => setTls({ cert_key_file: e.target.value || null })} placeholder="/path/to/client.pem" />
+            <label style={labelStyle}>{t.labelCaFile}</label>
+            <FilePicker
+              value={cfg.tls.ca_file ?? ""}
+              onChange={v => setTls({ ca_file: v || null })}
+              placeholder="/path/to/ca.pem"
+            />
+            <label style={labelStyle}>{t.labelCertKeyFile}</label>
+            <FilePicker
+              value={cfg.tls.cert_key_file ?? ""}
+              onChange={v => setTls({ cert_key_file: v || null })}
+              placeholder="/path/to/client.pem"
+            />
           </>
         )}
       </Section>
 
-      <Section title="SSH プロキシ">
-        <Toggle label="SSH トンネルを使用" checked={cfg.ssh !== null}
+      <Section title={t.sectionSsh}>
+        <Toggle label={t.toggleSsh} checked={cfg.ssh !== null}
           onChange={on => set({ ssh: on ? { enabled: true, host: "", port: 22, username: "", password: null, key_file: null } : null })} />
         {cfg.ssh && (
           <>
             <div style={{ display: "flex", gap: 4 }}>
               <div style={{ flex: 3 }}>
-                <label style={labelStyle}>SSH ホスト</label>
+                <label style={labelStyle}>{t.labelSshHost}</label>
                 <input style={{ width: "100%" }} value={cfg.ssh.host} onChange={e => setSsh({ host: e.target.value })} />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>ポート</label>
+                <label style={labelStyle}>{t.labelPort}</label>
                 <input style={{ width: "100%" }} type="number" value={cfg.ssh.port} onChange={e => setSsh({ port: parseInt(e.target.value) || 22 })} />
               </div>
             </div>
-            <label style={labelStyle}>SSH ユーザー名</label>
+            <label style={labelStyle}>{t.labelSshUsername}</label>
             <input style={inputStyle} value={cfg.ssh.username} onChange={e => setSsh({ username: e.target.value })} />
-            <label style={labelStyle}>秘密鍵ファイル（空なら SSH エージェント）</label>
-            <input style={inputStyle} value={cfg.ssh.key_file ?? ""} onChange={e => setSsh({ key_file: e.target.value || null })} placeholder="~/.ssh/id_rsa" />
-            <label style={labelStyle}>SSH パスワード（鍵優先）</label>
+            <label style={labelStyle}>{t.labelKeyFile}</label>
+            <FilePicker
+              value={cfg.ssh.key_file ?? ""}
+              onChange={v => setSsh({ key_file: v || null })}
+              placeholder="~/.ssh/id_rsa"
+            />
+            <label style={labelStyle}>{t.labelSshPassword}</label>
             <input style={inputStyle} type="password" value={cfg.ssh.password ?? ""} onChange={e => setSsh({ password: e.target.value || null })} />
           </>
         )}
       </Section>
 
+      {/* 接続確認結果 */}
+      {testMsg && (
+        <div style={{ fontSize: 11, color: testColor, marginBottom: 6, wordBreak: "break-all" }}>
+          {testMsg}
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-        <button onClick={onCancel} style={{ fontSize: 11 }}>キャンセル</button>
-        <button className="primary" onClick={() => onSave(cfg)} style={{ fontSize: 11 }}>保存</button>
+        <button onClick={handleTest} disabled={testState === "testing"} style={{ fontSize: 11 }}>
+          {testState === "testing" ? t.testConnectionTesting : t.testConnection}
+        </button>
+        <button onClick={onCancel} style={{ fontSize: 11 }}>{t.cancel}</button>
+        <button className="primary" onClick={() => onSave(cfg)} style={{ fontSize: 11 }}>{t.save}</button>
       </div>
     </div>
   );

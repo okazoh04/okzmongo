@@ -1,3 +1,4 @@
+use crate::ssh_tunnel::TunnelHandle;
 use mongodb::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -44,8 +45,8 @@ pub struct AppState {
     pub connections: Mutex<Vec<ConnectionConfig>>,
     /// 接続済みクライアント (接続ID -> Client)
     pub active_clients: Mutex<HashMap<String, Client>>,
-    /// SSH トンネルプロセス (接続ID -> PID)
-    pub ssh_pids: Mutex<HashMap<String, u32>>,
+    /// SSH トンネルハンドル (接続ID -> TunnelHandle)
+    pub ssh_tunnels: Mutex<HashMap<String, TunnelHandle>>,
     /// AES-256-GCM 暗号化鍵（起動時に一度だけ設定）
     pub crypto_key: OnceLock<[u8; 32]>,
 }
@@ -55,7 +56,7 @@ impl AppState {
         Self {
             connections: Mutex::new(Vec::new()),
             active_clients: Mutex::new(HashMap::new()),
-            ssh_pids: Mutex::new(HashMap::new()),
+            ssh_tunnels: Mutex::new(HashMap::new()),
             crypto_key: OnceLock::new(),
         }
     }
