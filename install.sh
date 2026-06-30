@@ -32,7 +32,7 @@ cat > "$DESKTOP_FILE" <<EOF
 Type=Application
 Name=OkzMongo
 Comment=MongoDB GUI クライアント
-Exec=$BIN_DIR/okzmongo
+Exec=env GDK_BACKEND=x11 $BIN_DIR/okzmongo
 Icon=okzmongo
 Categories=Development;Database;
 Terminal=false
