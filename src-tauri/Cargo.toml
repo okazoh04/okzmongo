@@ -1,0 +1,39 @@
+[package]
+name = "okzmongo"
+version = "0.1.0"
+description = "MongoDB GUI Client"
+authors = ["Trievo / Caracal"]
+edition = "2021"
+
+[lib]
+name = "okzmongo_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+mongodb = "3"
+tokio = { version = "1", features = ["full"] }
+futures-util = "0.3"
+bson = { version = "2", features = ["chrono-0_4"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1"
+uuid = { version = "1", features = ["v4"] }
+aes-gcm = "0.10"
+base64 = "0.22"
+
+[profile.dev]
+incremental = true
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
