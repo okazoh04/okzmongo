@@ -70,6 +70,19 @@ const zhTW = {
   version: "版本",
   close: "關閉",
   langLabel: "語言",
+  queryPad: "查詢",
+  documents: "文件",
+  queryPlaceholder: '{"field": "value"}\n\n※ 以 [ 開頭則作為 aggregate 管道執行\n[{"$match": {"field": "value"}}, {"$group": {"_id": "$field"}}]',
+  runQuery: "執行",
+  queryCollection: "集合",
+  queryCollectionPlaceholder: "集合名稱",
+  queryModeFind: "find",
+  queryModeAggregate: "aggregate",
+  queryError: "查詢錯誤: {error}",
+  queryResultCount: "{count} 筆",
+  queryNoResult: "無結果",
+  querySelectCollection: "請輸入集合名稱",
+  fieldHint: "欄位建議",
 };
 
 export default zhTW;

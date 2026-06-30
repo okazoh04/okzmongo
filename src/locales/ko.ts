@@ -70,6 +70,19 @@ const ko = {
   version: "버전",
   close: "닫기",
   langLabel: "언어",
+  queryPad: "쿼리",
+  documents: "문서",
+  queryPlaceholder: '{"field": "value"}\n\n※ [ 로 시작하면 aggregate 파이프라인으로 실행\n[{"$match": {"field": "value"}}, {"$group": {"_id": "$field"}}]',
+  runQuery: "실행",
+  queryCollection: "컬렉션",
+  queryCollectionPlaceholder: "컬렉션 이름",
+  queryModeFind: "find",
+  queryModeAggregate: "aggregate",
+  queryError: "쿼리 오류: {error}",
+  queryResultCount: "{count}건",
+  queryNoResult: "결과 없음",
+  querySelectCollection: "컬렉션 이름을 입력하세요",
+  fieldHint: "필드 후보",
 };
 
 export default ko;

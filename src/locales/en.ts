@@ -70,6 +70,19 @@ const en = {
   version: "Version",
   close: "Close",
   langLabel: "Language",
+  queryPad: "Query",
+  documents: "Documents",
+  queryPlaceholder: '{"field": "value"}\n\n* Start with [ to run as aggregate pipeline\n[{"$match": {"field": "value"}}, {"$group": {"_id": "$field"}}]',
+  runQuery: "Run",
+  queryCollection: "Collection",
+  queryCollectionPlaceholder: "Collection name",
+  queryModeFind: "find",
+  queryModeAggregate: "aggregate",
+  queryError: "Query error: {error}",
+  queryResultCount: "{count} results",
+  queryNoResult: "No results",
+  querySelectCollection: "Enter a collection name",
+  fieldHint: "Field suggestions",
 };
 
 export default en;

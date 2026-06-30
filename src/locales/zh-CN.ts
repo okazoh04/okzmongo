@@ -70,6 +70,19 @@ const zhCN = {
   version: "版本",
   close: "关闭",
   langLabel: "语言",
+  queryPad: "查询",
+  documents: "文档",
+  queryPlaceholder: '{"field": "value"}\n\n※ 以 [ 开头则作为 aggregate 管道执行\n[{"$match": {"field": "value"}}, {"$group": {"_id": "$field"}}]',
+  runQuery: "执行",
+  queryCollection: "集合",
+  queryCollectionPlaceholder: "集合名称",
+  queryModeFind: "find",
+  queryModeAggregate: "aggregate",
+  queryError: "查询错误: {error}",
+  queryResultCount: "{count} 条",
+  queryNoResult: "无结果",
+  querySelectCollection: "请输入集合名称",
+  fieldHint: "字段建议",
 };
 
 export default zhCN;

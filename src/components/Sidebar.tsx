@@ -285,6 +285,7 @@ export default function Sidebar({
                         isExpanded={isExpanded}
                         collections={cols}
                         onToggle={() => toggleDb(conn.id, db)}
+                        onSelectDb={() => onSelect({ connectionId: conn.id, db, collection: null })}
                         onSelectCollection={col => onSelect({ connectionId: conn.id, db, collection: col })}
                         selectedCollection={
                           selected?.connectionId === conn.id && selected.db === db
@@ -315,13 +316,14 @@ export default function Sidebar({
 }
 
 function DbNode({
-  db, isExpanded, collections, onToggle, onSelectCollection,
+  db, isExpanded, collections, onToggle, onSelectDb, onSelectCollection,
   selectedCollection, onCreateCollection, onDropCollection, onDump, onRestore,
 }: {
   db: string;
   isExpanded: boolean;
   collections: string[];
   onToggle: () => void;
+  onSelectDb: () => void;
   onSelectCollection: (col: string) => void;
   selectedCollection: string | null;
   onCreateCollection: (name: string) => void;
@@ -346,6 +348,15 @@ function DbNode({
           {isExpanded ? "▾" : "▸"}
         </span>
         <span style={{ color: "var(--yellow)", fontSize: 12, flex: 1 }}>{db}</span>
+        <button
+          onClick={e => { e.stopPropagation(); onSelectDb(); }}
+          style={{
+            fontSize: 9, padding: "0 4px", background: "none",
+            opacity: selectedCollection === null ? 1 : 0.5,
+            color: selectedCollection === null ? "var(--accent)" : undefined,
+          }}
+          title={t.queryPad}
+        >⌨</button>
         <button
           onClick={e => { e.stopPropagation(); onDump(); }}
           style={{ fontSize: 9, padding: "0 4px", background: "none", opacity: 0.6 }}

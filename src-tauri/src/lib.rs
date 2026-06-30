@@ -46,6 +46,11 @@ pub fn run() {
             import_collection,
             dump_database,
             restore_database,
+            // クエリスクラッチパッド
+            run_aggregate,
+            get_field_names,
+            delete_one_by_filter,
+            update_one_by_filter,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri アプリケーションの起動に失敗しました");

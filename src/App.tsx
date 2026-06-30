@@ -4,6 +4,7 @@ import { ConnectionConfig, SelectedItem } from "./types";
 import { useI18n, LOCALES } from "./i18n";
 import Sidebar from "./components/Sidebar";
 import DocumentList from "./components/DocumentList";
+import QueryPad from "./components/QueryPad";
 import About from "./components/About";
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
   const [selected, setSelected] = useState<SelectedItem | null>(null);
   const [filterJson, setFilterJson] = useState("{}");
   const [filterInput, setFilterInput] = useState("{}");
+  const [activeTab, setActiveTab] = useState<"documents" | "query">("documents");
   const [showAbout, setShowAbout] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
 
@@ -44,6 +46,8 @@ export default function App() {
     setSelected(item);
     setFilterInput("{}");
     setFilterJson("{}");
+    // DBレベル選択時はクエリタブ、コレクション選択時はドキュメントタブへ
+    setActiveTab(item.collection === null ? "query" : "documents");
   };
 
   const activeConn = selected
@@ -107,33 +111,75 @@ export default function App() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {selected ? (
             <>
-              {/* フィルタバー */}
+              {/* タブバー（コレクション選択時のみ両タブ表示、DBレベルはクエリのみ） */}
               <div style={{
-                padding: "7px 12px",
+                display: "flex",
+                alignItems: "center",
                 borderBottom: "1px solid var(--border)",
                 background: "var(--bg2)",
                 flexShrink: 0,
-                display: "flex",
-                gap: 6,
               }}>
-                <input
-                  value={filterInput}
-                  onChange={e => setFilterInput(e.target.value)}
-                  placeholder='{"field": "value"}'
-                  style={{ flex: 1, fontFamily: "monospace" }}
-                  onKeyDown={e => e.key === "Enter" && setFilterJson(filterInput)}
-                />
-                <button className="primary" onClick={() => setFilterJson(filterInput)}>{t.search}</button>
-                <button onClick={() => { setFilterInput("{}"); setFilterJson("{}"); }}>{t.clear}</button>
+                {selected.collection !== null && (
+                  <>
+                    <button
+                      onClick={() => setActiveTab("documents")}
+                      style={{
+                        fontSize: 12, padding: "6px 16px", border: "none", borderRadius: 0,
+                        borderBottom: activeTab === "documents" ? "2px solid var(--accent)" : "2px solid transparent",
+                        background: "none",
+                        color: activeTab === "documents" ? "var(--accent)" : "var(--text-muted)",
+                        cursor: "pointer",
+                      }}
+                    >{t.documents}</button>
+                    <button
+                      onClick={() => setActiveTab("query")}
+                      style={{
+                        fontSize: 12, padding: "6px 16px", border: "none", borderRadius: 0,
+                        borderBottom: activeTab === "query" ? "2px solid var(--accent)" : "2px solid transparent",
+                        background: "none",
+                        color: activeTab === "query" ? "var(--accent)" : "var(--text-muted)",
+                        cursor: "pointer",
+                      }}
+                    >{t.queryPad}</button>
+                  </>
+                )}
+                {selected.collection === null && (
+                  <span style={{ padding: "6px 16px", fontSize: 12, color: "var(--accent)", fontWeight: 600 }}>
+                    {t.queryPad}
+                  </span>
+                )}
+
+                {/* ドキュメントタブのフィルタ入力 */}
+                {activeTab === "documents" && selected.collection !== null && (
+                  <div style={{ flex: 1, display: "flex", gap: 6, padding: "4px 12px 4px 4px" }}>
+                    <input
+                      value={filterInput}
+                      onChange={e => setFilterInput(e.target.value)}
+                      placeholder='{"field": "value"}'
+                      style={{ flex: 1, fontFamily: "monospace", fontSize: 12 }}
+                      onKeyDown={e => e.key === "Enter" && setFilterJson(filterInput)}
+                    />
+                    <button className="primary" onClick={() => setFilterJson(filterInput)} style={{ fontSize: 12 }}>{t.search}</button>
+                    <button onClick={() => { setFilterInput("{}"); setFilterJson("{}"); }} style={{ fontSize: 12 }}>{t.clear}</button>
+                  </div>
+                )}
               </div>
 
               <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                <DocumentList
-                  connectionId={selected.connectionId}
-                  db={selected.db}
-                  collection={selected.collection}
-                  filterJson={filterJson}
-                />
+                {activeTab === "documents" && selected.collection !== null ? (
+                  <DocumentList
+                    connectionId={selected.connectionId}
+                    db={selected.db}
+                    collection={selected.collection}
+                    filterJson={filterJson}
+                  />
+                ) : (
+                  <QueryPad
+                    connectionId={selected.connectionId}
+                    db={selected.db}
+                    initialQuery={selected.collection ? `db.${selected.collection}.find({})` : undefined}
+                  />
+                )}
               </div>
             </>
           ) : (

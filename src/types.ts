@@ -33,7 +33,7 @@ export interface ConnectionConfig {
 export interface SelectedItem {
   connectionId: string;
   db: string;
-  collection: string;
+  collection: string | null; // null = DBレベル（スクラッチパッドのみ）
 }
 
 export function defaultConnection(): Omit<ConnectionConfig, "id"> {

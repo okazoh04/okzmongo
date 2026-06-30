@@ -271,3 +271,116 @@ pub async fn create_collection(
         .map_err(|e| format!("コレクション作成失敗: {e}"))?;
     Ok(())
 }
+
+#[tauri::command]
+pub async fn run_aggregate(
+    state: State<'_, AppState>,
+    connection_id: String,
+    db_name: String,
+    collection_name: String,
+    pipeline_json: String,
+) -> Result<Vec<Value>, String> {
+    let client = get_client(&state, &connection_id)?;
+    let col = client.database(&db_name).collection::<Document>(&collection_name);
+
+    let arr: Vec<Value> = serde_json::from_str(&pipeline_json)
+        .map_err(|e| format!("パイプラインパース失敗: {e}"))?;
+    let pipeline: Vec<Document> = arr.into_iter().map(json_to_doc).collect::<Result<_, _>>()?;
+
+    let mut cursor = col
+        .aggregate(pipeline)
+        .await
+        .map_err(|e| format!("aggregate失敗: {e}"))?;
+
+    let mut results = Vec::new();
+    while let Some(doc) = cursor
+        .try_next()
+        .await
+        .map_err(|e| format!("カーソル読み込み失敗: {e}"))?
+    {
+        results.push(doc_to_json(doc));
+    }
+    Ok(results)
+}
+
+#[tauri::command]
+pub async fn get_field_names(
+    state: State<'_, AppState>,
+    connection_id: String,
+    db_name: String,
+    collection_name: String,
+) -> Result<Vec<String>, String> {
+    let client = get_client(&state, &connection_id)?;
+    let col = client.database(&db_name).collection::<Document>(&collection_name);
+
+    let options = FindOptions::builder().limit(100).build();
+    let mut cursor = col
+        .find(Document::new())
+        .with_options(options)
+        .await
+        .map_err(|e| format!("サンプル取得失敗: {e}"))?;
+
+    let mut fields = std::collections::HashSet::new();
+    while let Some(doc) = cursor
+        .try_next()
+        .await
+        .map_err(|e| format!("カーソル読み込み失敗: {e}"))?
+    {
+        for key in doc.keys() {
+            fields.insert(key.clone());
+        }
+    }
+
+    let mut field_list: Vec<String> = fields.into_iter().collect();
+    field_list.sort();
+    Ok(field_list)
+}
+
+#[tauri::command]
+pub async fn delete_one_by_filter(
+    state: State<'_, AppState>,
+    connection_id: String,
+    db_name: String,
+    collection_name: String,
+    filter_json: String,
+) -> Result<u64, String> {
+    let client = get_client(&state, &connection_id)?;
+    let col = client.database(&db_name).collection::<Document>(&collection_name);
+
+    let v: Value = serde_json::from_str(&filter_json)
+        .map_err(|e| format!("フィルタJSONパース失敗: {e}"))?;
+    let filter = json_to_doc(v)?;
+
+    let result = col
+        .delete_one(filter)
+        .await
+        .map_err(|e| format!("削除失敗: {e}"))?;
+    Ok(result.deleted_count)
+}
+
+#[tauri::command]
+pub async fn update_one_by_filter(
+    state: State<'_, AppState>,
+    connection_id: String,
+    db_name: String,
+    collection_name: String,
+    filter_json: String,
+    update_json: String,
+) -> Result<u64, String> {
+    let client = get_client(&state, &connection_id)?;
+    let col = client.database(&db_name).collection::<Document>(&collection_name);
+
+    let fv: Value = serde_json::from_str(&filter_json)
+        .map_err(|e| format!("フィルタJSONパース失敗: {e}"))?;
+    let filter = json_to_doc(fv)?;
+
+    let uv: Value = serde_json::from_str(&update_json)
+        .map_err(|e| format!("更新JSONパース失敗: {e}"))?;
+    let update = json_to_doc(uv)?;
+
+    let result = col
+        .update_one(filter, update)
+        .await
+        .map_err(|e| format!("更新失敗: {e}"))?;
+    Ok(result.modified_count)
+}

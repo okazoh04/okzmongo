@@ -70,6 +70,19 @@ const ja = {
   version: "バージョン",
   close: "閉じる",
   langLabel: "言語",
+  queryPad: "クエリ",
+  documents: "ドキュメント",
+  queryPlaceholder: '{"field": "value"}\n\n※ [ で始めると aggregate パイプラインとして実行\n[{"$match": {"field": "value"}}, {"$group": {"_id": "$field"}}]',
+  runQuery: "実行",
+  queryCollection: "コレクション",
+  queryCollectionPlaceholder: "コレクション名",
+  queryModeFind: "find",
+  queryModeAggregate: "aggregate",
+  queryError: "クエリエラー: {error}",
+  queryResultCount: "{count} 件",
+  queryNoResult: "結果なし",
+  querySelectCollection: "コレクションを入力してください",
+  fieldHint: "フィールド候補",
 };
 
 export default ja;
