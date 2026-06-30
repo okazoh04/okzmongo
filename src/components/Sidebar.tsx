@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { save, open } from "@tauri-apps/plugin-dialog";
 import { ConnectionConfig, SelectedItem, defaultConnection } from "../types";
 import { ConnectionForm } from "./ConnectionForm";
 
@@ -123,6 +124,46 @@ export default function Sidebar({
     if (!confirm(`コレクション "${col}" を削除しますか？`)) return;
     await invoke("drop_collection", { connectionId, dbName: db, collectionName: col });
     await refreshCollections(connectionId, db);
+  };
+
+  const handleDump = async (connectionId: string, db: string) => {
+    const path = await save({
+      defaultPath: `${db}_dump.zip`,
+      filters: [{ name: "ZIP", extensions: ["zip"] }],
+    });
+    if (!path) return;
+    try {
+      const result: { collections: number; documents: number } = await invoke("dump_database", {
+        connectionId,
+        dbName: db,
+        filePath: path,
+      });
+      alert(`ダンプ完了: ${result.collections} コレクション, ${result.documents.toLocaleString()} ドキュメント`);
+    } catch (e) {
+      alert(`ダンプ失敗: ${e}`);
+    }
+  };
+
+  const handleRestore = async (connectionId: string, db: string) => {
+    const path = await open({
+      filters: [{ name: "ZIP", extensions: ["zip"] }],
+      multiple: false,
+    });
+    if (!path) return;
+    const dropBefore = confirm(
+      `DB "${db}" へリストアします。\n既存の同名コレクションを削除してから挿入しますか？\n（キャンセルで既存ドキュメントに追記）`
+    );
+    try {
+      const result: { collections: number; documents: number } = await invoke("restore_database", {
+        connectionId,
+        dbName: db,
+        filePath: path as string,
+        dropBefore,
+      });
+      alert(`リストア完了: ${result.collections} コレクション, ${result.documents.toLocaleString()} ドキュメント`);
+    } catch (e) {
+      alert(`リストア失敗: ${e}`);
+    }
   };
 
   return (
@@ -262,6 +303,8 @@ export default function Sidebar({
                         }
                         onCreateCollection={name => handleCreateCollection(conn.id, db, name)}
                         onDropCollection={col => handleDropCollection(conn.id, db, col)}
+                        onDump={() => handleDump(conn.id, db)}
+                        onRestore={() => handleRestore(conn.id, db)}
                       />
                     );
                   })}
@@ -283,7 +326,7 @@ export default function Sidebar({
 
 function DbNode({
   db, isExpanded, collections, onToggle, onSelectCollection,
-  selectedCollection, onCreateCollection, onDropCollection,
+  selectedCollection, onCreateCollection, onDropCollection, onDump, onRestore,
 }: {
   db: string;
   isExpanded: boolean;
@@ -293,6 +336,8 @@ function DbNode({
   selectedCollection: string | null;
   onCreateCollection: (name: string) => void;
   onDropCollection: (col: string) => void;
+  onDump: () => void;
+  onRestore: () => void;
 }) {
   const [newColName, setNewColName] = useState("");
   const [showInput, setShowInput] = useState(false);
@@ -309,7 +354,17 @@ function DbNode({
         <span style={{ fontSize: 10, color: "var(--text-muted)", width: 10 }}>
           {isExpanded ? "▾" : "▸"}
         </span>
-        <span style={{ color: "var(--yellow)", fontSize: 12 }}>{db}</span>
+        <span style={{ color: "var(--yellow)", fontSize: 12, flex: 1 }}>{db}</span>
+        <button
+          onClick={e => { e.stopPropagation(); onDump(); }}
+          style={{ fontSize: 9, padding: "0 4px", background: "none", opacity: 0.6 }}
+          title="ダンプ（ZIP）"
+        >⬇</button>
+        <button
+          onClick={e => { e.stopPropagation(); onRestore(); }}
+          style={{ fontSize: 9, padding: "0 4px", background: "none", opacity: 0.6 }}
+          title="リストア（ZIP）"
+        >⬆</button>
       </div>
 
       {isExpanded && (

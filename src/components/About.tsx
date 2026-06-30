@@ -1,0 +1,66 @@
+import { useEffect, useState } from "react";
+import { getVersion } from "@tauri-apps/api/app";
+
+interface Props {
+  onClose: () => void;
+}
+
+export default function About({ onClose }: Props) {
+  const [version, setVersion] = useState<string>("...");
+
+  useEffect(() => {
+    getVersion().then(setVersion);
+  }, []);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: "var(--bg2)",
+          border: "1px solid var(--border)",
+          borderRadius: 8,
+          padding: "32px 40px",
+          minWidth: 320,
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <div style={{ fontSize: 36, marginBottom: 4 }}>🍃</div>
+        <div style={{ fontWeight: 700, fontSize: 20, color: "var(--accent2)" }}>OkzMongo</div>
+        <div style={{ fontSize: 13, color: "var(--text-sub)" }}>
+          MongoDB GUI クライアント
+        </div>
+        <div style={{
+          fontSize: 12,
+          color: "var(--text-muted)",
+          background: "var(--bg3)",
+          borderRadius: 4,
+          padding: "4px 16px",
+        }}>
+          バージョン {version}
+        </div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+          Tauri v2 + React 19 + MongoDB v3
+        </div>
+        <button
+          onClick={onClose}
+          style={{ marginTop: 12, padding: "4px 24px" }}
+        >
+          閉じる
+        </button>
+      </div>
+    </div>
+  );
+}

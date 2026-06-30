@@ -1,6 +1,6 @@
 [package]
 name = "okzmongo"
-version = "0.1.0"
+version = "0.2.0"
 description = "MongoDB GUI Client"
 authors = ["Trievo / Caracal"]
 edition = "2021"
@@ -27,6 +27,7 @@ anyhow = "1"
 uuid = { version = "1", features = ["v4"] }
 aes-gcm = "0.10"
 base64 = "0.22"
+zip = "2"
 
 [profile.dev]
 incremental = true

@@ -42,6 +42,8 @@ pub fn run() {
             // インポート/エクスポート
             export_collection,
             import_collection,
+            dump_database,
+            restore_database,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri アプリケーションの起動に失敗しました");

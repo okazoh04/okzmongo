@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { ConnectionConfig, SelectedItem } from "./types";
 import Sidebar from "./components/Sidebar";
 import DocumentList from "./components/DocumentList";
+import About from "./components/About";
 
 export default function App() {
   const [connections, setConnections] = useState<ConnectionConfig[]>([]);
@@ -10,6 +11,7 @@ export default function App() {
   const [selected, setSelected] = useState<SelectedItem | null>(null);
   const [filterJson, setFilterJson] = useState("{}");
   const [filterInput, setFilterInput] = useState("{}");
+  const [showAbout, setShowAbout] = useState(false);
 
   const loadConnections = async () => {
     const conns: ConnectionConfig[] = await invoke("list_connections");
@@ -67,6 +69,12 @@ export default function App() {
             <span>{selected.collection}</span>
           </span>
         )}
+        <div style={{ flex: 1 }} />
+        <button
+          onClick={() => setShowAbout(true)}
+          style={{ fontSize: 11, padding: "2px 8px", opacity: 0.7 }}
+          title="OkzMongo について"
+        >?</button>
       </div>
 
       {/* ボディ */}
@@ -139,6 +147,7 @@ export default function App() {
           )}
         </div>
       </div>
+      {showAbout && <About onClose={() => setShowAbout(false)} />}
     </div>
   );
 }
