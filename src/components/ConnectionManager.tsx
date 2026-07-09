@@ -160,7 +160,7 @@ export default function ConnectionManager({ connections, activeConnectionId, onR
   };
 
   const handleRemove = async (id: string) => {
-    if (!confirm("この接続設定を削除しますか？")) return;
+    if (!await confirm("この接続設定を削除しますか？")) return;
     await invoke("remove_connection", { id });
     onRefresh();
   };

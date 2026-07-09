@@ -31,6 +31,7 @@ export default function Sidebar({
   const [connecting, setConnecting] = useState<string | null>(null);
   const [connError, setConnError] = useState<Record<string, string>>({});
   const [editTarget, setEditTarget] = useState<"new" | string | null>(null);
+  const [newDbInput, setNewDbInput] = useState<Record<string, { dbName: string; colName: string } | null>>({});
 
   useEffect(() => {
     for (const id of connectedIds) {
@@ -107,7 +108,7 @@ export default function Sidebar({
   };
 
   const handleRemove = async (id: string) => {
-    if (!confirm(t.deleteConnectionConfirm)) return;
+    if (!await confirm(t.deleteConnectionConfirm)) return;
     await invoke("remove_connection", { id });
     onRefresh();
   };
@@ -117,8 +118,14 @@ export default function Sidebar({
     await refreshCollections(connectionId, db);
   };
 
+  const handleCreateDatabase = async (connectionId: string, dbName: string, colName: string) => {
+    await invoke("create_collection", { connectionId, dbName, collectionName: colName });
+    await loadDatabases(connectionId);
+    setNewDbInput(prev => ({ ...prev, [connectionId]: null }));
+  };
+
   const handleDropCollection = async (connectionId: string, db: string, col: string) => {
-    if (!confirm(tpl(t.dropCollectionConfirm, { col }))) return;
+    if (!await confirm(tpl(t.dropCollectionConfirm, { col }))) return;
     await invoke("drop_collection", { connectionId, dbName: db, collectionName: col });
     await refreshCollections(connectionId, db);
   };
@@ -145,7 +152,7 @@ export default function Sidebar({
       multiple: false,
     });
     if (!path) return;
-    const dropBefore = confirm(tpl(t.restoreConfirm, { db }));
+    const dropBefore = await confirm(tpl(t.restoreConfirm, { db }));
     try {
       const result: { collections: number; documents: number } = await invoke("restore_database", {
         connectionId, dbName: db, filePath: path as string, dropBefore,
@@ -314,6 +321,44 @@ export default function Sidebar({
                       />
                     );
                   })}
+
+                  {/* DB作成フォーム */}
+                  {newDbInput[conn.id] ? (
+                    <div style={{ padding: "4px 8px" }}>
+                      <input
+                        value={newDbInput[conn.id]!.dbName}
+                        onChange={e => setNewDbInput(prev => ({ ...prev, [conn.id]: { ...prev[conn.id]!, dbName: e.target.value } }))}
+                        placeholder={t.newDbNamePlaceholder}
+                        style={{ width: "100%", fontSize: 11, marginBottom: 3, boxSizing: "border-box" }}
+                        autoFocus
+                        onKeyDown={e => e.key === "Escape" && setNewDbInput(prev => ({ ...prev, [conn.id]: null }))}
+                      />
+                      <div style={{ display: "flex", gap: 3 }}>
+                        <input
+                          value={newDbInput[conn.id]!.colName}
+                          onChange={e => setNewDbInput(prev => ({ ...prev, [conn.id]: { ...prev[conn.id]!, colName: e.target.value } }))}
+                          placeholder={t.newDbColPlaceholder}
+                          style={{ flex: 1, fontSize: 11 }}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") {
+                              const s = newDbInput[conn.id]!;
+                              if (s.dbName.trim() && s.colName.trim())
+                                handleCreateDatabase(conn.id, s.dbName.trim(), s.colName.trim());
+                            }
+                            if (e.key === "Escape") setNewDbInput(prev => ({ ...prev, [conn.id]: null }));
+                          }}
+                        />
+                        <button onClick={() => setNewDbInput(prev => ({ ...prev, [conn.id]: null }))} style={{ fontSize: 10 }}>✕</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => setNewDbInput(prev => ({ ...prev, [conn.id]: { dbName: "", colName: "" } }))}
+                      style={{ color: "var(--text-muted)", fontSize: 10, padding: "3px 8px", cursor: "pointer" }}
+                    >
+                      {t.addDatabase}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

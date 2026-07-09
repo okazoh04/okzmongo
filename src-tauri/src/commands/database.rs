@@ -1,5 +1,6 @@
 use crate::state::AppState;
-use bson::{Bson, Document};
+use bson::serde_helpers::Utf8LossyDeserialization;
+use bson::{Bson, Document, RawDocumentBuf};
 use futures_util::TryStreamExt;
 use mongodb::options::FindOptions;
 use serde_json::Value;
@@ -13,6 +14,16 @@ fn get_client(state: &AppState, connection_id: &str) -> Result<mongodb::Client, 
         .get(connection_id)
         .cloned()
         .ok_or_else(|| format!("接続 '{connection_id}' が見つかりません"))
+}
+
+/// 不正なUTF-8バイト列を含むドキュメントでも読み込みを継続できるよう、
+/// RawDocumentBuf経由で取得し、通常の変換が失敗した場合はUTF-8をロッシー変換する。
+fn raw_doc_to_document(raw_doc: RawDocumentBuf) -> Result<Document, String> {
+    Document::try_from(raw_doc.as_ref())
+        .or_else(|_| {
+            bson::from_slice::<Utf8LossyDeserialization<Document>>(raw_doc.as_bytes()).map(|w| w.0)
+        })
+        .map_err(|e| format!("ドキュメント変換失敗: {e}"))
 }
 
 fn bson_to_json(bson: Bson) -> Value {
@@ -130,19 +141,20 @@ pub async fn find_documents(
     };
 
     let options = FindOptions::builder().skip(skip).limit(limit).build();
-    let mut cursor = col
+    let raw_col = col.clone_with_type::<RawDocumentBuf>();
+    let mut cursor = raw_col
         .find(filter)
         .with_options(options)
         .await
         .map_err(|e| format!("find失敗: {e}"))?;
 
     let mut results = Vec::new();
-    while let Some(doc) = cursor
+    while let Some(raw_doc) = cursor
         .try_next()
         .await
         .map_err(|e| format!("カーソル読み込み失敗: {e}"))?
     {
-        results.push(doc_to_json(doc));
+        results.push(doc_to_json(raw_doc_to_document(raw_doc)?));
     }
     Ok(results)
 }
@@ -314,18 +326,20 @@ pub async fn get_field_names(
     let col = client.database(&db_name).collection::<Document>(&collection_name);
 
     let options = FindOptions::builder().limit(100).build();
-    let mut cursor = col
+    let raw_col = col.clone_with_type::<RawDocumentBuf>();
+    let mut cursor = raw_col
         .find(Document::new())
         .with_options(options)
         .await
         .map_err(|e| format!("サンプル取得失敗: {e}"))?;
 
     let mut fields = std::collections::HashSet::new();
-    while let Some(doc) = cursor
+    while let Some(raw_doc) = cursor
         .try_next()
         .await
         .map_err(|e| format!("カーソル読み込み失敗: {e}"))?
     {
+        let doc = raw_doc_to_document(raw_doc)?;
         for key in doc.keys() {
             fields.insert(key.clone());
         }

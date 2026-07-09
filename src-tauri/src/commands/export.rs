@@ -1,9 +1,36 @@
 use crate::state::AppState;
-use bson::{Bson, Document};
+use bson::serde_helpers::Utf8LossyDeserialization;
+use bson::{Bson, Document, RawDocumentBuf};
 use chrono::Utc;
 use futures_util::TryStreamExt;
+use mongodb::Collection;
 use serde_json::Value;
 use tauri::State;
+
+/// 不正なUTF-8バイト列を含むドキュメントでも読み込みを継続できるよう、
+/// RawDocumentBuf経由で取得し、通常の変換が失敗した場合はUTF-8をロッシー変換する。
+async fn find_all_as_json(col: &Collection<Document>, label: &str) -> Result<Vec<Value>, String> {
+    let raw_col = col.clone_with_type::<RawDocumentBuf>();
+    let mut cursor = raw_col
+        .find(Document::new())
+        .await
+        .map_err(|e| format!("find失敗 ({label}): {e}"))?;
+
+    let mut docs = Vec::new();
+    while let Some(raw_doc) = cursor
+        .try_next()
+        .await
+        .map_err(|e| format!("カーソル読み込み失敗 ({label}): {e}"))?
+    {
+        let doc = Document::try_from(raw_doc.as_ref()).or_else(|_| {
+            bson::from_slice::<Utf8LossyDeserialization<Document>>(raw_doc.as_bytes())
+                .map(|w| w.0)
+        });
+        let doc = doc.map_err(|e| format!("ドキュメント変換失敗 ({label}): {e}"))?;
+        docs.push(bson_to_json(Bson::Document(doc)));
+    }
+    Ok(docs)
+}
 
 fn bson_to_json(bson: Bson) -> Value {
     match bson {
@@ -91,19 +118,7 @@ pub async fn export_collection(
         .database(&db_name)
         .collection::<Document>(&collection_name);
 
-    let mut cursor = col
-        .find(Document::new())
-        .await
-        .map_err(|e| format!("find失敗: {e}"))?;
-
-    let mut docs = Vec::new();
-    while let Some(doc) = cursor
-        .try_next()
-        .await
-        .map_err(|e| format!("カーソル読み込み失敗: {e}"))?
-    {
-        docs.push(bson_to_json(Bson::Document(doc)));
-    }
+    let docs = find_all_as_json(&col, &collection_name).await?;
 
     serde_json::to_string_pretty(&docs).map_err(|e| format!("JSON変換失敗: {e}"))
 }
@@ -180,19 +195,7 @@ pub async fn dump_database(
 
     for col_name in &col_names {
         let col = db.collection::<Document>(col_name);
-        let mut cursor = col
-            .find(Document::new())
-            .await
-            .map_err(|e| format!("find失敗 ({col_name}): {e}"))?;
-
-        let mut docs = Vec::new();
-        while let Some(doc) = cursor
-            .try_next()
-            .await
-            .map_err(|e| format!("カーソル読み込み失敗: {e}"))?
-        {
-            docs.push(bson_to_json(Bson::Document(doc)));
-        }
+        let docs = find_all_as_json(&col, col_name).await?;
         total_docs += docs.len() as u64;
         collections_map.insert(col_name.clone(), Value::Array(docs));
     }

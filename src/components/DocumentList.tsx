@@ -63,7 +63,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
   }, [load]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t.deleteDocConfirm)) return;
+    if (!await confirm(t.deleteDocConfirm)) return;
     try {
       await invoke("delete_document", { connectionId, dbName: db, collectionName: collection, id });
       load();

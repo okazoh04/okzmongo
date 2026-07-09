@@ -1,6 +1,6 @@
 [package]
 name = "okzmongo"
-version = "0.4.0"
+version = "0.5.0"
 description = "MongoDB GUI Client"
 authors = ["Trievo / Caracal"]
 edition = "2021"
