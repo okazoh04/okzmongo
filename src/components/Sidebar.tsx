@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { save, open } from "@tauri-apps/plugin-dialog";
+import { save, open, confirm } from "@tauri-apps/plugin-dialog";
 import { ConnectionConfig, SelectedItem, defaultConnection } from "../types";
 import { ConnectionForm } from "./ConnectionForm";
 import { useI18n } from "../i18n";

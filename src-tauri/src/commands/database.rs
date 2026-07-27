@@ -1,6 +1,8 @@
+use crate::commands::bson_json::{
+    doc_to_ext_json as doc_to_json, ext_json_to_doc as json_to_doc, raw_doc_to_document,
+};
 use crate::state::AppState;
-use bson::serde_helpers::Utf8LossyDeserialization;
-use bson::{Bson, Document, RawDocumentBuf};
+use bson::{Document, RawDocumentBuf};
 use futures_util::TryStreamExt;
 use mongodb::options::FindOptions;
 use serde_json::Value;
@@ -14,83 +16,6 @@ fn get_client(state: &AppState, connection_id: &str) -> Result<mongodb::Client, 
         .get(connection_id)
         .cloned()
         .ok_or_else(|| format!("接続 '{connection_id}' が見つかりません"))
-}
-
-/// 不正なUTF-8バイト列を含むドキュメントでも読み込みを継続できるよう、
-/// RawDocumentBuf経由で取得し、通常の変換が失敗した場合はUTF-8をロッシー変換する。
-fn raw_doc_to_document(raw_doc: RawDocumentBuf) -> Result<Document, String> {
-    Document::try_from(raw_doc.as_ref())
-        .or_else(|_| {
-            bson::from_slice::<Utf8LossyDeserialization<Document>>(raw_doc.as_bytes()).map(|w| w.0)
-        })
-        .map_err(|e| format!("ドキュメント変換失敗: {e}"))
-}
-
-fn bson_to_json(bson: Bson) -> Value {
-    match bson {
-        Bson::ObjectId(oid) => Value::String(oid.to_hex()),
-        Bson::DateTime(dt) => Value::String(dt.to_string()),
-        Bson::Document(doc) => {
-            let map: serde_json::Map<String, Value> =
-                doc.into_iter().map(|(k, v)| (k, bson_to_json(v))).collect();
-            Value::Object(map)
-        }
-        Bson::Array(arr) => Value::Array(arr.into_iter().map(bson_to_json).collect()),
-        Bson::Boolean(b) => Value::Bool(b),
-        Bson::Int32(i) => Value::Number(i.into()),
-        Bson::Int64(i) => Value::Number(i.into()),
-        Bson::Double(f) => serde_json::Number::from_f64(f)
-            .map(Value::Number)
-            .unwrap_or(Value::Null),
-        Bson::String(s) => Value::String(s),
-        Bson::Null => Value::Null,
-        other => Value::String(format!("{other}")),
-    }
-}
-
-fn doc_to_json(doc: Document) -> Value {
-    bson_to_json(Bson::Document(doc))
-}
-
-fn json_to_doc(value: Value) -> Result<Document, String> {
-    match value {
-        Value::Object(map) => {
-            let mut doc = Document::new();
-            for (k, v) in map {
-                doc.insert(k, json_to_bson(v)?);
-            }
-            Ok(doc)
-        }
-        _ => Err("オブジェクト形式のJSONが必要です".to_string()),
-    }
-}
-
-fn json_to_bson(value: Value) -> Result<Bson, String> {
-    match value {
-        Value::Null => Ok(Bson::Null),
-        Value::Bool(b) => Ok(Bson::Boolean(b)),
-        Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                Ok(Bson::Int64(i))
-            } else if let Some(f) = n.as_f64() {
-                Ok(Bson::Double(f))
-            } else {
-                Err(format!("数値変換失敗: {n}"))
-            }
-        }
-        Value::String(s) => Ok(Bson::String(s)),
-        Value::Array(arr) => {
-            let bson_arr: Result<Vec<_>, _> = arr.into_iter().map(json_to_bson).collect();
-            Ok(Bson::Array(bson_arr?))
-        }
-        Value::Object(map) => {
-            let mut doc = Document::new();
-            for (k, v) in map {
-                doc.insert(k, json_to_bson(v)?);
-            }
-            Ok(Bson::Document(doc))
-        }
-    }
 }
 
 #[tauri::command]

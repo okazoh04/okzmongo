@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import { ConnectionConfig, AuthConfig, TlsConfig, SshConfig, defaultConnection } from "../types";
 
 interface Props {

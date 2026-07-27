@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n";
+import DocumentTree from "./tree/DocumentTree";
+import { unwrapValue } from "../lib/bsonTypes";
 
 interface Props {
   connectionId: string;
@@ -12,6 +14,8 @@ interface Props {
   onClose: () => void;
 }
 
+type Tab = "tree" | "json";
+
 export default function DocumentEditor({
   connectionId,
   db,
@@ -22,17 +26,39 @@ export default function DocumentEditor({
   onClose,
 }: Props) {
   const { t } = useI18n();
+  const [tab, setTab] = useState<Tab>("tree");
+  const [draftDoc, setDraftDoc] = useState<Record<string, unknown>>(initialDoc);
   const [json, setJson] = useState(JSON.stringify(initialDoc, null, 2));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const switchTab = (next: Tab) => {
+    if (next === "json" && tab === "tree") {
+      setJson(JSON.stringify(draftDoc, null, 2));
+    }
+    if (next === "tree" && tab === "json") {
+      try {
+        setDraftDoc(JSON.parse(json));
+      } catch {
+        setError(t.invalidJson);
+        return;
+      }
+    }
+    setError(null);
+    setTab(next);
+  };
+
   const handleSave = async () => {
     let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(json);
-    } catch {
-      setError(t.invalidJson);
-      return;
+    if (tab === "json") {
+      try {
+        parsed = JSON.parse(json);
+      } catch {
+        setError(t.invalidJson);
+        return;
+      }
+    } else {
+      parsed = draftDoc;
     }
 
     setSaving(true);
@@ -46,7 +72,7 @@ export default function DocumentEditor({
           docJson: JSON.stringify(parsed),
         });
       } else {
-        const id = initialDoc._id as string;
+        const id = unwrapValue(initialDoc._id) as string;
         await invoke("update_document", {
           connectionId,
           dbName: db,
@@ -62,6 +88,14 @@ export default function DocumentEditor({
       setSaving(false);
     }
   };
+
+  const tabButtonStyle = (active: boolean): React.CSSProperties => ({
+    flex: 1,
+    background: active ? "var(--surface)" : "none",
+    borderRadius: 0,
+    fontSize: 12,
+    padding: "6px 0",
+  });
 
   return (
     <div style={{
@@ -95,6 +129,11 @@ export default function DocumentEditor({
           <button onClick={onClose} style={{ background: "none", fontSize: 16 }}>✕</button>
         </div>
 
+        <div style={{ display: "flex", borderBottom: "1px solid var(--border)" }}>
+          <button onClick={() => switchTab("tree")} style={tabButtonStyle(tab === "tree")}>{t.treeTab}</button>
+          <button onClick={() => switchTab("json")} style={tabButtonStyle(tab === "json")}>{t.jsonTab}</button>
+        </div>
+
         {error && (
           <div style={{
             background: "var(--red)",
@@ -106,22 +145,34 @@ export default function DocumentEditor({
           </div>
         )}
 
-        <textarea
-          value={json}
-          onChange={(e) => setJson(e.target.value)}
-          style={{
-            flex: 1,
-            resize: "none",
-            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-            fontSize: 12,
-            padding: 16,
-            background: "var(--bg3)",
-            border: "none",
-            color: "var(--text)",
-            minHeight: 300,
-          }}
-          spellCheck={false}
-        />
+        {tab === "tree" ? (
+          <div style={{ flex: 1, overflow: "auto", padding: 12, minHeight: 300 }}>
+            <DocumentTree value={draftDoc} onChange={setDraftDoc} onSave={handleSave} />
+          </div>
+        ) : (
+          <textarea
+            value={json}
+            onChange={(e) => setJson(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                handleSave();
+              }
+            }}
+            style={{
+              flex: 1,
+              resize: "none",
+              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+              fontSize: 12,
+              padding: 16,
+              background: "var(--bg3)",
+              border: "none",
+              color: "var(--text)",
+              minHeight: 300,
+            }}
+            spellCheck={false}
+          />
+        )}
 
         <div style={{
           padding: "10px 16px",

@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { save, open } from "@tauri-apps/plugin-dialog";
+import { save, open, confirm } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import DocumentEditor from "./DocumentEditor";
+import DocumentTree from "./tree/DocumentTree";
 import { useI18n } from "../i18n";
+import { unwrapValue } from "../lib/bsonTypes";
 
 interface Props {
   connectionId: string;
@@ -21,9 +23,9 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editDoc, setEditDoc] = useState<Record<string, unknown> | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [ioStatus, setIoStatus] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [dirtyKeys, setDirtyKeys] = useState<Set<number>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,6 +49,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
       ]);
       setDocs(fetched);
       setTotal(cnt);
+      setDirtyKeys(new Set());
     } catch (e) {
       setError(String(e));
     } finally {
@@ -67,6 +70,37 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
     try {
       await invoke("delete_document", { connectionId, dbName: db, collectionName: collection, id });
       load();
+    } catch (e) {
+      alert(String(e));
+    }
+  };
+
+  const handleDocChange = (index: number, next: Record<string, unknown>) => {
+    setDocs((prev) => {
+      const copy = [...prev];
+      copy[index] = next;
+      return copy;
+    });
+    setDirtyKeys((prev) => new Set(prev).add(index));
+  };
+
+  const handleSaveRow = async (index: number) => {
+    const doc = docs[index];
+    const id = unwrapValue(doc._id) as string | undefined;
+    if (!id) return;
+    try {
+      await invoke("update_document", {
+        connectionId,
+        dbName: db,
+        collectionName: collection,
+        id,
+        docJson: JSON.stringify(doc),
+      });
+      setDirtyKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
     } catch (e) {
       alert(String(e));
     }
@@ -165,7 +199,8 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
       {/* ドキュメント一覧 */}
       <div style={{ flex: 1, overflow: "auto", minHeight: 0 }}>
         {docs.map((doc, i) => {
-          const id = doc._id as string | undefined;
+          const id = unwrapValue(doc._id) as string | undefined;
+          const dirty = dirtyKeys.has(i);
           return (
             <div
               key={id ?? i}
@@ -177,21 +212,19 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
                 alignItems: "flex-start",
               }}
             >
-              <pre style={{
-                flex: 1,
-                margin: 0,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-all",
-                fontSize: 11,
-                color: "var(--text)",
-                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-              }}>
-                {JSON.stringify(doc, null, 2)}
-              </pre>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {dirty && (
+                  <div style={{ fontSize: 10, color: "var(--yellow)", marginBottom: 3 }}>
+                    {t.unsavedHint}
+                  </div>
+                )}
+                <DocumentTree
+                  value={doc}
+                  onChange={(next) => handleDocChange(i, next)}
+                  onSave={() => handleSaveRow(i)}
+                />
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
-                <button onClick={() => setEditDoc(doc)} style={{ fontSize: 11, padding: "3px 8px" }}>
-                  {t.editDoc}
-                </button>
                 {id && (
                   <button
                     onClick={() => handleDelete(id)}
@@ -231,17 +264,6 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
           <button onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>▶</button>
           <button onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1}>▶|</button>
         </div>
-      )}
-
-      {editDoc && (
-        <DocumentEditor
-          connectionId={connectionId}
-          db={db}
-          collection={collection}
-          initialDoc={editDoc}
-          onSaved={() => { setEditDoc(null); load(); }}
-          onClose={() => setEditDoc(null)}
-        />
       )}
 
       {showNew && (
