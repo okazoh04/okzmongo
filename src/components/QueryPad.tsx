@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n";
 import getCaretCoordinates from "textarea-caret";
+import DocumentTree from "./tree/DocumentTree";
 
 interface Props {
   connectionId: string;
@@ -62,6 +63,36 @@ interface Parsed {
   collection: string;
   method: string;
   args: string[];
+}
+
+// mongosh でよく使われるコンストラクタを Extended JSON 形式へ変換するスタブ。
+// バックエンド（bson_json.rs）が対応する $oid/$date/$numberInt/$numberLong のみ実装。
+const MONGO_SHELL_GLOBALS = {
+  ObjectId: (id?: string) => ({ $oid: id ?? "000000000000000000000000" }),
+  ISODate: (s?: string) => ({ $date: s ? new Date(s).getTime() : Date.now() }),
+  Date: (s?: string) => ({ $date: s ? new Date(s).getTime() : Date.now() }),
+  NumberLong: (v: string | number) => ({ $numberLong: String(v) }),
+  NumberInt: (v: string | number) => ({ $numberInt: String(v) }),
+};
+
+// 引数の文字列を実際に JS として評価する（mongosh 同様、裸キーや ObjectId(...) 等をサポート）。
+// 評価コンテキストは webview の JS 実行環境そのものなので、任意コード実行のリスクは
+// 「ユーザーが自分で打ち込んだクエリをその場で実行する」という mongosh と同じ信頼境界。
+function evalMongoExpr(src: string): unknown {
+  const names = Object.keys(MONGO_SHELL_GLOBALS);
+  const fn = new Function(...names, `"use strict"; return (${src});`);
+  return fn(...names.map(n => (MONGO_SHELL_GLOBALS as Record<string, unknown>)[n]));
+}
+
+// 引数文字列を Extended JSON 文字列に変換する。空なら fallback をそのまま返す。
+function argToJson(argStr: string | undefined, fallback: string): string {
+  const s = (argStr ?? "").trim();
+  if (!s) return fallback;
+  try {
+    return JSON.stringify(evalMongoExpr(s));
+  } catch (e) {
+    throw new Error(`式の評価に失敗しました: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 function parseMongosh(input: string): Parsed | string {
@@ -168,7 +199,7 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
     try {
       switch (method) {
         case "find": {
-          const filterJson = args[0] ?? "{}";
+          const filterJson = argToJson(args[0], "{}");
           const skip = targetPage * PAGE_SIZE;
           const [docs, total] = await Promise.all([
             invoke<Record<string, unknown>[]>("find_documents", {
@@ -183,7 +214,7 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
           break;
         }
         case "findOne": {
-          const filterJson = args[0] ?? "{}";
+          const filterJson = argToJson(args[0], "{}");
           const docs = await invoke<Record<string, unknown>[]>("find_documents", {
             connectionId, dbName: db, collectionName: col,
             filterJson, skip: 0, limit: 1,
@@ -192,7 +223,7 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
           break;
         }
         case "aggregate": {
-          const pipelineJson = args[0] ?? "[]";
+          const pipelineJson = argToJson(args[0], "[]");
           const docs = await invoke<Record<string, unknown>[]>("run_aggregate", {
             connectionId, dbName: db, collectionName: col, pipelineJson,
           });
@@ -201,7 +232,7 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
         }
         case "countDocuments":
         case "estimatedDocumentCount": {
-          const filterJson = method === "estimatedDocumentCount" ? "{}" : (args[0] ?? "{}");
+          const filterJson = method === "estimatedDocumentCount" ? "{}" : argToJson(args[0], "{}");
           const cnt = await invoke<number>("count_documents", {
             connectionId, dbName: db, collectionName: col, filterJson,
           });
@@ -209,7 +240,7 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
           break;
         }
         case "insertOne": {
-          const docJson = args[0] ?? "{}";
+          const docJson = argToJson(args[0], "{}");
           const id = await invoke<string>("insert_document", {
             connectionId, dbName: db, collectionName: col, docJson,
           });
@@ -217,8 +248,8 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
           break;
         }
         case "updateOne": {
-          const filterJson = args[0] ?? "{}";
-          const updateJson = args[1] ?? "{}";
+          const filterJson = argToJson(args[0], "{}");
+          const updateJson = argToJson(args[1], "{}");
           const cnt = await invoke<number>("update_one_by_filter", {
             connectionId, dbName: db, collectionName: col, filterJson, updateJson,
           });
@@ -226,7 +257,7 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
           break;
         }
         case "deleteOne": {
-          const filterJson = args[0] ?? "{}";
+          const filterJson = argToJson(args[0], "{}");
           const cnt = await invoke<number>("delete_one_by_filter", {
             connectionId, dbName: db, collectionName: col, filterJson,
           });
@@ -415,11 +446,7 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
             )}
             {result.docs.map((doc, i) => (
               <div key={i} style={{ borderBottom: "1px solid var(--border)", padding: "8px 12px" }}>
-                <pre style={{
-                  margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-all",
-                  fontSize: 11, color: "var(--text)",
-                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                }}>{JSON.stringify(doc, null, 2)}</pre>
+                <DocumentTree value={doc} readOnly />
               </div>
             ))}
           </>
