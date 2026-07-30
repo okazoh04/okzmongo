@@ -93,8 +93,8 @@ export default function DocumentEditor({
     flex: 1,
     background: active ? "var(--surface)" : "none",
     borderRadius: 0,
-    fontSize: 12,
-    padding: "6px 0",
+    fontSize: 13,
+    padding: "9px 0",
   });
 
   return (
@@ -163,7 +163,7 @@ export default function DocumentEditor({
               flex: 1,
               resize: "none",
               fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-              fontSize: 12,
+              fontSize: 13,
               padding: 16,
               background: "var(--bg3)",
               border: "none",

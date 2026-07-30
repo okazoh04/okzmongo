@@ -33,9 +33,9 @@ html, body, #root {
 button {
   cursor: pointer;
   border: none;
-  border-radius: 4px;
-  padding: 4px 10px;
-  font-size: 12px;
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-size: 14px;
   background: var(--surface);
   color: var(--text);
   transition: background 0.15s;
@@ -59,10 +59,10 @@ button.danger:hover { opacity: 0.85; }
 input, textarea, select {
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 6px;
   color: var(--text);
-  padding: 5px 8px;
-  font-size: 12px;
+  padding: 8px 12px;
+  font-size: 14px;
   font-family: inherit;
   outline: none;
   transition: border-color 0.15s;

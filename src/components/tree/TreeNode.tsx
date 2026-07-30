@@ -145,7 +145,7 @@ export default function TreeNode(props: TreeNodeProps) {
             </span>
           )
         )}
-        {error && <span style={{ color: "var(--red)", fontSize: 10 }}>{error}</span>}
+        {error && <span style={{ color: "var(--red)", fontSize: 11 }}>{error}</span>}
         {!readOnly && (
           <button
             onClick={(e) => {
@@ -154,8 +154,8 @@ export default function TreeNode(props: TreeNodeProps) {
             }}
             title={t.treeDeleteField}
             style={{
-              fontSize: 10,
-              padding: "1px 5px",
+              fontSize: 12,
+              padding: "3px 8px",
               color: "var(--red)",
               background: "none",
               opacity: hover ? 1 : 0.4,
@@ -193,7 +193,7 @@ export default function TreeNode(props: TreeNodeProps) {
             <div style={{ paddingLeft: (depth + 1) * 16 + 4, padding: "2px 4px" }}>
               <button
                 onClick={() => (type === "array" ? onAddArrayItem(path) : onAddField(path))}
-                style={{ fontSize: 10, padding: "1px 6px", color: "var(--text-sub)", background: "none" }}
+                style={{ fontSize: 12, padding: "3px 8px", color: "var(--text-sub)", background: "none" }}
               >
                 {type === "array" ? t.treeAddArrayItem : t.treeAddField}
               </button>

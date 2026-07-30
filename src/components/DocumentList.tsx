@@ -168,11 +168,11 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
           {loading ? t.loading : tpl(t.docCount, { count: total.toLocaleString() })}
         </span>
         <div style={{ flex: 1 }} />
-        <button onClick={() => setShowNew(true)} className="primary" style={{ fontSize: 11 }}>{t.addDoc}</button>
-        <button onClick={load} style={{ fontSize: 11 }}>{t.refresh}</button>
+        <button onClick={() => setShowNew(true)} className="primary">{t.addDoc}</button>
+        <button onClick={load}>{t.refresh}</button>
         <span style={{ color: "var(--border)" }}>|</span>
-        <button onClick={handleExport} style={{ fontSize: 11 }}>{t.exportBtn}</button>
-        <button onClick={handleImport} style={{ fontSize: 11 }}>{t.importBtn}</button>
+        <button onClick={handleExport}>{t.exportBtn}</button>
+        <button onClick={handleImport}>{t.importBtn}</button>
       </div>
 
       {/* エラー / IO状態 */}
@@ -228,7 +228,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
                 {id && (
                   <button
                     onClick={() => handleDelete(id)}
-                    style={{ fontSize: 11, padding: "3px 8px", color: "var(--red)" }}
+                    style={{ fontSize: 12, padding: "5px 10px", color: "var(--red)" }}
                   >
                     {t.deleteDoc}
                   </button>

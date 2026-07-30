@@ -59,7 +59,7 @@ export default function About({ onClose }: Props) {
         </div>
         <button
           onClick={onClose}
-          style={{ marginTop: 12, padding: "4px 24px" }}
+          style={{ marginTop: 12, padding: "7px 24px" }}
         >
           {t.close}
         </button>

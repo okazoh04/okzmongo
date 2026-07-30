@@ -363,7 +363,7 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
             rows={5}
             style={{
               width: "100%", fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-              fontSize: 12, resize: "vertical", background: "var(--bg)",
+              fontSize: 13, resize: "vertical", background: "var(--bg)",
               color: "var(--text)", border: "1px solid var(--border)",
               borderRadius: 4, padding: "6px 8px", boxSizing: "border-box",
             }}
@@ -395,10 +395,10 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button className="primary" onClick={() => runQuery(0)} disabled={loading} style={{ fontSize: 12 }}>
+          <button className="primary" onClick={() => runQuery(0)} disabled={loading}>
             {loading ? "…" : t.runQuery}
           </button>
-          <button onClick={() => { setQuery(""); setResult(null); setError(null); setCandidates([]); }} style={{ fontSize: 12 }}>
+          <button onClick={() => { setQuery(""); setResult(null); setError(null); setCandidates([]); }}>
             {t.clear}
           </button>
           <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Ctrl+Enter {t.runQuery}</span>

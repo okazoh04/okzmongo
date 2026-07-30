@@ -124,7 +124,7 @@ export default function App() {
                     <button
                       onClick={() => setActiveTab("documents")}
                       style={{
-                        fontSize: 12, padding: "6px 16px", border: "none", borderRadius: 0,
+                        fontSize: 13, padding: "8px 18px", border: "none", borderRadius: 0,
                         borderBottom: activeTab === "documents" ? "2px solid var(--accent)" : "2px solid transparent",
                         background: "none",
                         color: activeTab === "documents" ? "var(--accent)" : "var(--text-muted)",
@@ -134,7 +134,7 @@ export default function App() {
                     <button
                       onClick={() => setActiveTab("query")}
                       style={{
-                        fontSize: 12, padding: "6px 16px", border: "none", borderRadius: 0,
+                        fontSize: 13, padding: "8px 18px", border: "none", borderRadius: 0,
                         borderBottom: activeTab === "query" ? "2px solid var(--accent)" : "2px solid transparent",
                         background: "none",
                         color: activeTab === "query" ? "var(--accent)" : "var(--text-muted)",
@@ -156,11 +156,11 @@ export default function App() {
                       value={filterInput}
                       onChange={e => setFilterInput(e.target.value)}
                       placeholder='{"field": "value"}'
-                      style={{ flex: 1, fontFamily: "monospace", fontSize: 12 }}
+                      style={{ flex: 1, fontFamily: "monospace" }}
                       onKeyDown={e => e.key === "Enter" && setFilterJson(filterInput)}
                     />
-                    <button className="primary" onClick={() => setFilterJson(filterInput)} style={{ fontSize: 12 }}>{t.search}</button>
-                    <button onClick={() => { setFilterInput("{}"); setFilterJson("{}"); }} style={{ fontSize: 12 }}>{t.clear}</button>
+                    <button className="primary" onClick={() => setFilterJson(filterInput)}>{t.search}</button>
+                    <button onClick={() => { setFilterInput("{}"); setFilterJson("{}"); }}>{t.clear}</button>
                   </div>
                 )}
               </div>

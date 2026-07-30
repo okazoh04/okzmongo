@@ -79,11 +79,11 @@ export default function TypeBadge({ type, onChangeType, readOnly }: Props) {
                   display: "block",
                   width: "100%",
                   textAlign: "left",
-                  padding: "4px 10px",
+                  padding: "6px 12px",
                   background: t === type ? "var(--accent)" : "none",
                   color: t === type ? "white" : "var(--text)",
                   border: "none",
-                  fontSize: 11,
+                  fontSize: 12,
                 }}
               >
                 {LABELS[t]}

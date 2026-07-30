@@ -45,7 +45,7 @@ function FilePicker({ value, onChange, placeholder }: {
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
       />
-      <button type="button" onClick={browse} style={{ fontSize: 11, flexShrink: 0 }}>
+      <button type="button" onClick={browse} style={{ flexShrink: 0 }}>
         {t.browseFile}
       </button>
     </div>
@@ -183,11 +183,11 @@ export function ConnectionForm({
       )}
 
       <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-        <button onClick={handleTest} disabled={testState === "testing"} style={{ fontSize: 11 }}>
+        <button onClick={handleTest} disabled={testState === "testing"}>
           {testState === "testing" ? t.testConnectionTesting : t.testConnection}
         </button>
-        <button onClick={onCancel} style={{ fontSize: 11 }}>{t.cancel}</button>
-        <button className="primary" onClick={() => onSave(cfg)} style={{ fontSize: 11 }}>{t.save}</button>
+        <button onClick={onCancel}>{t.cancel}</button>
+        <button className="primary" onClick={() => onSave(cfg)}>{t.save}</button>
       </div>
     </div>
   );

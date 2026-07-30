@@ -34,7 +34,7 @@ export default function ValueEditor({ type, initialRaw, onCommit, onSaveNow, onC
     }
   };
 
-  const commonStyle: React.CSSProperties = { fontSize: 11, padding: "1px 4px", width: 180 };
+  const commonStyle: React.CSSProperties = { fontSize: 13, padding: "4px 8px", width: 200 };
 
   if (type === "bool") {
     return (

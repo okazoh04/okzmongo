@@ -171,10 +171,9 @@ export default function Sidebar({
         padding: "8px 10px", borderBottom: "1px solid var(--border)",
         background: "var(--bg3)", flexShrink: 0,
       }}>
-        <span style={{ color: "var(--accent)", fontWeight: 700, fontSize: 12, flex: 1 }}>{t.connections}</span>
+        <span style={{ color: "var(--accent)", fontWeight: 700, fontSize: 13, flex: 1 }}>{t.connections}</span>
         <button
           onClick={() => setEditTarget("new")}
-          style={{ fontSize: 11, padding: "2px 8px" }}
           className="primary"
         >
           {t.addConnection}
@@ -203,10 +202,10 @@ export default function Sidebar({
             boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
           }}>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
-              <span style={{ color: "var(--accent2)", fontWeight: 700, fontSize: 13, flex: 1 }}>
+              <span style={{ color: "var(--accent2)", fontWeight: 700, fontSize: 14, flex: 1 }}>
                 {editTarget === "new" ? t.newConnection : t.editConnection}
               </span>
-              <button onClick={() => setEditTarget(null)} style={{ fontSize: 12, padding: "2px 7px" }}>✕</button>
+              <button onClick={() => setEditTarget(null)} style={{ fontSize: 14, padding: "4px 10px" }}>✕</button>
             </div>
             <ConnectionForm
               initial={
@@ -237,11 +236,11 @@ export default function Sidebar({
                 background: "var(--bg2)",
                 borderBottom: "1px solid var(--border)",
               }}>
-                <span style={{ fontSize: 9, color: isConnected ? "var(--green)" : "var(--text-muted)" }}>
+                <span style={{ fontSize: 11, color: isConnected ? "var(--green)" : "var(--text-muted)" }}>
                   {isConnected ? "●" : "○"}
                 </span>
                 <span style={{
-                  flex: 1, fontSize: 12, fontWeight: 600,
+                  flex: 1, fontSize: 13, fontWeight: 600,
                   color: isConnected ? "var(--text)" : "var(--text-muted)",
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}>
@@ -250,7 +249,7 @@ export default function Sidebar({
                 {isConnected ? (
                   <button
                     onClick={() => handleDisconnect(conn.id)}
-                    style={{ fontSize: 10, padding: "1px 5px", color: "var(--red)", flexShrink: 0 }}
+                    style={{ fontSize: 12, padding: "4px 10px", color: "var(--red)", flexShrink: 0 }}
                   >
                     {t.disconnect}
                   </button>
@@ -258,7 +257,7 @@ export default function Sidebar({
                   <button
                     onClick={() => handleConnect(conn.id)}
                     disabled={connecting === conn.id}
-                    style={{ fontSize: 10, padding: "1px 5px", flexShrink: 0 }}
+                    style={{ fontSize: 12, padding: "4px 10px", flexShrink: 0 }}
                     className="primary"
                   >
                     {connecting === conn.id ? t.connecting : t.connect}
@@ -266,14 +265,14 @@ export default function Sidebar({
                 )}
                 <button
                   onClick={() => setEditTarget(conn.id)}
-                  style={{ fontSize: 10, padding: "1px 5px", flexShrink: 0 }}
+                  style={{ fontSize: 12, padding: "4px 9px", flexShrink: 0 }}
                   title={t.editConnection}
                 >
                   ✎
                 </button>
                 <button
                   onClick={() => handleRemove(conn.id)}
-                  style={{ fontSize: 10, padding: "1px 5px", color: "var(--red)", flexShrink: 0 }}
+                  style={{ fontSize: 12, padding: "4px 9px", color: "var(--red)", flexShrink: 0 }}
                   title={t.deleteConnectionConfirm}
                 >
                   ✕
@@ -282,7 +281,7 @@ export default function Sidebar({
 
               {/* エラー */}
               {connError[conn.id] && (
-                <div style={{ background: "var(--red)", color: "var(--bg3)", fontSize: 10, padding: "3px 10px" }}>
+                <div style={{ background: "var(--red)", color: "var(--bg3)", fontSize: 11, padding: "3px 10px" }}>
                   {connError[conn.id]}
                 </div>
               )}
@@ -291,7 +290,7 @@ export default function Sidebar({
               {isConnected && (
                 <div style={{ paddingLeft: 8 }}>
                   {dbs.length === 0 && (
-                    <div style={{ color: "var(--text-muted)", fontSize: 11, padding: "4px 8px" }}>
+                    <div style={{ color: "var(--text-muted)", fontSize: 12, padding: "4px 8px" }}>
                       {t.loadingDbs}
                     </div>
                   )}
@@ -329,7 +328,7 @@ export default function Sidebar({
                         value={newDbInput[conn.id]!.dbName}
                         onChange={e => setNewDbInput(prev => ({ ...prev, [conn.id]: { ...prev[conn.id]!, dbName: e.target.value } }))}
                         placeholder={t.newDbNamePlaceholder}
-                        style={{ width: "100%", fontSize: 11, marginBottom: 3, boxSizing: "border-box" }}
+                        style={{ width: "100%", marginBottom: 3, boxSizing: "border-box" }}
                         autoFocus
                         onKeyDown={e => e.key === "Escape" && setNewDbInput(prev => ({ ...prev, [conn.id]: null }))}
                       />
@@ -338,7 +337,7 @@ export default function Sidebar({
                           value={newDbInput[conn.id]!.colName}
                           onChange={e => setNewDbInput(prev => ({ ...prev, [conn.id]: { ...prev[conn.id]!, colName: e.target.value } }))}
                           placeholder={t.newDbColPlaceholder}
-                          style={{ flex: 1, fontSize: 11 }}
+                          style={{ flex: 1 }}
                           onKeyDown={e => {
                             if (e.key === "Enter") {
                               const s = newDbInput[conn.id]!;
@@ -348,13 +347,13 @@ export default function Sidebar({
                             if (e.key === "Escape") setNewDbInput(prev => ({ ...prev, [conn.id]: null }));
                           }}
                         />
-                        <button onClick={() => setNewDbInput(prev => ({ ...prev, [conn.id]: null }))} style={{ fontSize: 10 }}>✕</button>
+                        <button onClick={() => setNewDbInput(prev => ({ ...prev, [conn.id]: null }))} style={{ fontSize: 12 }}>✕</button>
                       </div>
                     </div>
                   ) : (
                     <div
                       onClick={() => setNewDbInput(prev => ({ ...prev, [conn.id]: { dbName: "", colName: "" } }))}
-                      style={{ color: "var(--text-muted)", fontSize: 10, padding: "3px 8px", cursor: "pointer" }}
+                      style={{ color: "var(--text-muted)", fontSize: 12, padding: "4px 8px", cursor: "pointer" }}
                     >
                       {t.addDatabase}
                     </div>
@@ -366,7 +365,7 @@ export default function Sidebar({
         })}
 
         {connections.length === 0 && (
-          <div style={{ color: "var(--text-muted)", textAlign: "center", padding: "24px 8px", fontSize: 11 }}>
+          <div style={{ color: "var(--text-muted)", textAlign: "center", padding: "24px 8px", fontSize: 12 }}>
             {t.noConnections}
           </div>
         )}
@@ -404,14 +403,14 @@ function DbNode({
           padding: "3px 6px", cursor: "pointer", borderRadius: 3,
         }}
       >
-        <span style={{ fontSize: 10, color: "var(--text-muted)", width: 10 }}>
+        <span style={{ fontSize: 12, color: "var(--text-muted)", width: 12 }}>
           {isExpanded ? "▾" : "▸"}
         </span>
-        <span style={{ color: "var(--yellow)", fontSize: 12, flex: 1 }}>{db}</span>
+        <span style={{ color: "var(--yellow)", fontSize: 13, flex: 1 }}>{db}</span>
         <button
           onClick={e => { e.stopPropagation(); onSelectDb(); }}
           style={{
-            fontSize: 9, padding: "0 4px", background: "none",
+            fontSize: 13, padding: "3px 7px", background: "none",
             opacity: selectedCollection === null ? 1 : 0.5,
             color: selectedCollection === null ? "var(--accent)" : undefined,
           }}
@@ -419,12 +418,12 @@ function DbNode({
         >⌨</button>
         <button
           onClick={e => { e.stopPropagation(); onDump(); }}
-          style={{ fontSize: 9, padding: "0 4px", background: "none", opacity: 0.6 }}
+          style={{ fontSize: 13, padding: "3px 7px", background: "none", opacity: 0.6 }}
           title={t.dumpTitle}
         >⬇</button>
         <button
           onClick={e => { e.stopPropagation(); onRestore(); }}
-          style={{ fontSize: 9, padding: "0 4px", background: "none", opacity: 0.6 }}
+          style={{ fontSize: 13, padding: "3px 7px", background: "none", opacity: 0.6 }}
           title={t.restoreTitle}
         >⬆</button>
       </div>
@@ -441,12 +440,12 @@ function DbNode({
                 background: selectedCollection === col ? "var(--surface2)" : "transparent",
               }}
             >
-              <span style={{ fontSize: 11, color: "var(--text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 12, color: "var(--text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {col}
               </span>
               <button
                 onClick={e => { e.stopPropagation(); onDropCollection(col); }}
-                style={{ fontSize: 9, padding: "0 3px", color: "var(--text-muted)", background: "none", opacity: 0.5 }}
+                style={{ fontSize: 12, padding: "2px 6px", color: "var(--text-muted)", background: "none", opacity: 0.5 }}
                 title={t.deleteDoc}
               >
                 ✕
@@ -460,7 +459,7 @@ function DbNode({
                 value={newColName}
                 onChange={e => setNewColName(e.target.value)}
                 placeholder={t.newCollectionPlaceholder}
-                style={{ flex: 1, fontSize: 11 }}
+                style={{ flex: 1 }}
                 onKeyDown={e => {
                   if (e.key === "Enter" && newColName.trim()) {
                     onCreateCollection(newColName.trim());
@@ -471,12 +470,12 @@ function DbNode({
                 }}
                 autoFocus
               />
-              <button onClick={() => setShowInput(false)} style={{ fontSize: 10 }}>✕</button>
+              <button onClick={() => setShowInput(false)} style={{ fontSize: 12 }}>✕</button>
             </div>
           ) : (
             <div
               onClick={() => setShowInput(true)}
-              style={{ color: "var(--text-muted)", fontSize: 10, padding: "2px 6px", cursor: "pointer" }}
+              style={{ color: "var(--text-muted)", fontSize: 12, padding: "3px 6px", cursor: "pointer" }}
             >
               {t.addCollection}
             </div>
