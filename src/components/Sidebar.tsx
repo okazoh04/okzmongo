@@ -192,6 +192,7 @@ export default function Sidebar({
         <button
           onClick={() => setEditTarget("new")}
           className="primary"
+          style={{ fontSize: 12, padding: "4px 10px" }}
         >
           {t.addConnection}
         </button>
