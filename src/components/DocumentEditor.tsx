@@ -3,11 +3,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n";
 import DocumentTree from "./tree/DocumentTree";
 import { unwrapValue } from "../lib/bsonTypes";
+import { usePolicy } from "../PolicyProvider";
+import { EnvironmentTier } from "../types";
 
 interface Props {
   connectionId: string;
   db: string;
   collection: string;
+  environment: EnvironmentTier;
   initialDoc: Record<string, unknown>;
   isNew?: boolean;
   onSaved: () => void;
@@ -20,12 +23,14 @@ export default function DocumentEditor({
   connectionId,
   db,
   collection,
+  environment,
   initialDoc,
   isNew = false,
   onSaved,
   onClose,
 }: Props) {
   const { t } = useI18n();
+  const { guard } = usePolicy();
   const [tab, setTab] = useState<Tab>("tree");
   const [draftDoc, setDraftDoc] = useState<Record<string, unknown>>(initialDoc);
   const [json, setJson] = useState(JSON.stringify(initialDoc, null, 2));
@@ -60,6 +65,8 @@ export default function DocumentEditor({
     } else {
       parsed = draftDoc;
     }
+
+    if (!await guard(environment, isNew ? "insertDoc" : "updateDoc")) return;
 
     setSaving(true);
     setError(null);

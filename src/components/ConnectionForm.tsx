@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { ConnectionConfig, AuthConfig, TlsConfig, SshConfig } from "../types";
+import { ConnectionConfig, AuthConfig, TlsConfig, SshConfig, EnvironmentTier } from "../types";
 import { useI18n } from "../i18n";
+import { ENV_LABEL_KEY } from "../policy";
+
+const ENV_TIERS: EnvironmentTier[] = ["production", "staging", "development"];
 
 const inputStyle: React.CSSProperties = { width: "100%", marginBottom: 4 };
 const labelStyle: React.CSSProperties = { color: "var(--text-muted)", fontSize: 10, display: "block", marginBottom: 1 };
@@ -106,6 +109,16 @@ export function ConnectionForm({
               onChange={e => set({ port: parseInt(e.target.value) || 27017 })} />
           </div>
         </div>
+        <label style={labelStyle}>{t.labelEnvironment}</label>
+        <select
+          style={inputStyle}
+          value={cfg.environment}
+          onChange={e => set({ environment: e.target.value as EnvironmentTier })}
+        >
+          {ENV_TIERS.map(env => (
+            <option key={env} value={env}>{t[ENV_LABEL_KEY[env]]}</option>
+          ))}
+        </select>
       </Section>
 
       <Section title={t.sectionAuth}>

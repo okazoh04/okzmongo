@@ -29,6 +29,10 @@ pub struct SshConfig {
     pub key_file: Option<String>,
 }
 
+fn default_environment() -> String {
+    "development".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionConfig {
     #[serde(default)]
@@ -36,6 +40,8 @@ pub struct ConnectionConfig {
     pub name: String,
     pub host: String,
     pub port: u16,
+    #[serde(default = "default_environment")]
+    pub environment: String,
     pub auth: Option<AuthConfig>,
     pub tls: Option<TlsConfig>,
     pub ssh: Option<SshConfig>,

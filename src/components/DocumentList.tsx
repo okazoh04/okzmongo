@@ -6,18 +6,22 @@ import DocumentEditor from "./DocumentEditor";
 import DocumentTree from "./tree/DocumentTree";
 import { useI18n } from "../i18n";
 import { unwrapValue } from "../lib/bsonTypes";
+import { usePolicy } from "../PolicyProvider";
+import { EnvironmentTier } from "../types";
 
 interface Props {
   connectionId: string;
   db: string;
   collection: string;
   filterJson: string;
+  environment: EnvironmentTier;
 }
 
 const PAGE_SIZE = 50;
 
-export default function DocumentList({ connectionId, db, collection, filterJson }: Props) {
+export default function DocumentList({ connectionId, db, collection, filterJson, environment }: Props) {
   const { t, tpl } = useI18n();
+  const { guard } = usePolicy();
   const [docs, setDocs] = useState<Record<string, unknown>[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -66,6 +70,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
   }, [load]);
 
   const handleDelete = async (id: string) => {
+    if (!await guard(environment, "deleteDoc")) return;
     if (!await confirm(t.deleteDocConfirm)) return;
     try {
       await invoke("delete_document", { connectionId, dbName: db, collectionName: collection, id });
@@ -88,6 +93,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
     const doc = docs[index];
     const id = unwrapValue(doc._id) as string | undefined;
     if (!id) return;
+    if (!await guard(environment, "updateDoc")) return;
     try {
       await invoke("update_document", {
         connectionId,
@@ -129,6 +135,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
 
   const handleImport = async () => {
     setIoStatus(null);
+    if (!await guard(environment, "importCollection")) return;
     try {
       const path = await open({
         filters: [{ name: "JSON", extensions: ["json"] }],
@@ -271,6 +278,7 @@ export default function DocumentList({ connectionId, db, collection, filterJson 
           connectionId={connectionId}
           db={db}
           collection={collection}
+          environment={environment}
           initialDoc={{}}
           isNew
           onSaved={() => { setShowNew(false); load(); }}

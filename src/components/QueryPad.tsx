@@ -3,11 +3,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../i18n";
 import getCaretCoordinates from "textarea-caret";
 import DocumentTree from "./tree/DocumentTree";
+import { usePolicy } from "../PolicyProvider";
+import { EnvironmentTier } from "../types";
 
 interface Props {
   connectionId: string;
   db: string;
   initialQuery?: string;
+  environment: EnvironmentTier;
 }
 
 const PAGE_SIZE = 50;
@@ -141,8 +144,9 @@ type ResultView =
   | { kind: "scalar"; label: string; value: unknown }
   | { kind: "message"; ok: boolean; text: string };
 
-export default function QueryPad({ connectionId, db, initialQuery }: Props) {
+export default function QueryPad({ connectionId, db, initialQuery, environment }: Props) {
   const { t, tpl } = useI18n();
+  const { guard } = usePolicy();
   const [query, setQuery] = useState(initialQuery ?? "");
   const [result, setResult] = useState<ResultView | null>(null);
   const [loading, setLoading] = useState(false);
@@ -192,6 +196,9 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
     if (typeof parsed === "string") { setError(parsed); return; }
 
     const { collection: col, method, args } = parsed;
+    if (["insertOne", "updateOne", "deleteOne"].includes(method)) {
+      if (!await guard(environment, "queryWrite")) return;
+    }
     setLoading(true);
     setError(null);
     setResult(null);
@@ -272,7 +279,7 @@ export default function QueryPad({ connectionId, db, initialQuery }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [connectionId, db, query, t, tpl]);
+  }, [connectionId, db, query, t, tpl, environment, guard]);
 
   // 補完候補を更新
   const updateCandidates = useCallback(async (text: string, pos: number) => {

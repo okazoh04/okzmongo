@@ -20,11 +20,14 @@ export interface SshConfig {
   key_file: string | null;
 }
 
+export type EnvironmentTier = "production" | "staging" | "development";
+
 export interface ConnectionConfig {
   id: string;
   name: string;
   host: string;
   port: number;
+  environment: EnvironmentTier;
   auth: AuthConfig | null;
   tls: TlsConfig | null;
   ssh: SshConfig | null;
@@ -41,6 +44,7 @@ export function defaultConnection(): Omit<ConnectionConfig, "id"> {
     name: "",
     host: "localhost",
     port: 27017,
+    environment: "development",
     auth: null,
     tls: null,
     ssh: null,

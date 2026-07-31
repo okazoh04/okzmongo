@@ -4,6 +4,8 @@ import { save, open, confirm } from "@tauri-apps/plugin-dialog";
 import { ConnectionConfig, SelectedItem, defaultConnection } from "../types";
 import { ConnectionForm } from "./ConnectionForm";
 import { useI18n } from "../i18n";
+import { ENV_LABEL_KEY, ENV_COLOR } from "../policy";
+import { usePolicy } from "../PolicyProvider";
 
 interface Props {
   connections: ConnectionConfig[];
@@ -25,6 +27,7 @@ export default function Sidebar({
   onRefresh,
 }: Props) {
   const { t, tpl } = useI18n();
+  const { guard } = usePolicy();
   const [expandedDbs, setExpandedDbs] = useState<Record<string, Set<string>>>({});
   const [collections, setCollections] = useState<Record<string, string[]>>({});
   const [databases, setDatabases] = useState<Record<string, string[]>>({});
@@ -125,6 +128,8 @@ export default function Sidebar({
   };
 
   const handleDropCollection = async (connectionId: string, db: string, col: string) => {
+    const env = connections.find(c => c.id === connectionId)?.environment ?? "development";
+    if (!await guard(env, "dropCollection")) return;
     if (!await confirm(tpl(t.dropCollectionConfirm, { col }))) return;
     await invoke("drop_collection", { connectionId, dbName: db, collectionName: col });
     await refreshCollections(connectionId, db);
@@ -147,6 +152,8 @@ export default function Sidebar({
   };
 
   const handleRestore = async (connectionId: string, db: string) => {
+    const env = connections.find(c => c.id === connectionId)?.environment ?? "development";
+    if (!await guard(env, "restoreDatabase")) return;
     const path = await open({
       filters: [{ name: "ZIP", extensions: ["zip"] }],
       multiple: false,
@@ -245,6 +252,13 @@ export default function Sidebar({
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}>
                   {conn.name}
+                </span>
+                <span style={{
+                  fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3,
+                  color: ENV_COLOR[conn.environment], border: `1px solid ${ENV_COLOR[conn.environment]}`,
+                  flexShrink: 0,
+                }}>
+                  {t[ENV_LABEL_KEY[conn.environment]]}
                 </span>
                 {isConnected ? (
                   <button

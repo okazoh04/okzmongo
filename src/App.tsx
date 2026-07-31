@@ -6,6 +6,7 @@ import Sidebar from "./components/Sidebar";
 import DocumentList from "./components/DocumentList";
 import QueryPad from "./components/QueryPad";
 import About from "./components/About";
+import PolicySettings from "./components/PolicySettings";
 
 export default function App() {
   const { t, locale, setLocale } = useI18n();
@@ -16,6 +17,7 @@ export default function App() {
   const [filterInput, setFilterInput] = useState("{}");
   const [activeTab, setActiveTab] = useState<"documents" | "query">("documents");
   const [showAbout, setShowAbout] = useState(false);
+  const [showPolicySettings, setShowPolicySettings] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
 
   const loadConnections = async () => {
@@ -77,6 +79,11 @@ export default function App() {
           </span>
         )}
         <div style={{ flex: 1 }} />
+        <button
+          onClick={() => setShowPolicySettings(true)}
+          style={{ fontSize: 11, padding: "2px 8px", opacity: 0.7 }}
+          title={t.policySettingsTitle}
+        >⚙</button>
         <button
           onClick={() => setShowAbout(true)}
           style={{ fontSize: 11, padding: "2px 8px", opacity: 0.7 }}
@@ -172,12 +179,14 @@ export default function App() {
                     db={selected.db}
                     collection={selected.collection}
                     filterJson={filterJson}
+                    environment={activeConn?.environment ?? "development"}
                   />
                 ) : (
                   <QueryPad
                     connectionId={selected.connectionId}
                     db={selected.db}
                     initialQuery={selected.collection ? `db.${selected.collection}.find({})` : undefined}
+                    environment={activeConn?.environment ?? "development"}
                   />
                 )}
               </div>
@@ -252,6 +261,7 @@ export default function App() {
         )}
       </div>
       {showAbout && <About onClose={() => setShowAbout(false)} />}
+      {showPolicySettings && <PolicySettings onClose={() => setShowPolicySettings(false)} />}
     </div>
   );
 }
