@@ -29,6 +29,8 @@ export default function PolicySettings({ onClose }: { onClose: () => void }) {
   };
 
   const cellStyle: React.CSSProperties = { padding: "6px 8px", textAlign: "center" };
+  const selectStyle: React.CSSProperties = { fontSize: 11, padding: "3px 22px 3px 8px" };
+  const buttonStyle: React.CSSProperties = { fontSize: 12, padding: "5px 14px" };
 
   return (
     <div
@@ -54,7 +56,7 @@ export default function PolicySettings({ onClose }: { onClose: () => void }) {
           <span style={{ color: "var(--accent2)", fontWeight: 700, fontSize: 14, flex: 1 }}>
             {t.policySettingsTitle}
           </span>
-          <button onClick={onClose} style={{ fontSize: 14, padding: "4px 10px" }}>✕</button>
+          <button onClick={onClose} style={{ fontSize: 12, padding: "4px 9px" }}>✕</button>
         </div>
         <div style={{ color: "var(--text-muted)", fontSize: 11, marginBottom: 12 }}>
           {t.policySettingsHint}
@@ -82,7 +84,7 @@ export default function PolicySettings({ onClose }: { onClose: () => void }) {
                     <select
                       value={draft[env][op]}
                       onChange={e => setCell(env, op, e.target.value as PermissionLevel)}
-                      style={{ color: LEVEL_COLOR[draft[env][op]], fontWeight: 600 }}
+                      style={{ ...selectStyle, color: LEVEL_COLOR[draft[env][op]], fontWeight: 600 }}
                     >
                       {PERMISSION_LEVELS.map(level => (
                         <option key={level} value={level}>{t[PERMISSION_LABEL_KEY[level]]}</option>
@@ -96,8 +98,8 @@ export default function PolicySettings({ onClose }: { onClose: () => void }) {
         </table>
 
         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", marginTop: 16 }}>
-          <button onClick={onClose}>{t.cancel}</button>
-          <button className="primary" onClick={handleSave}>{t.save}</button>
+          <button onClick={onClose} style={buttonStyle}>{t.cancel}</button>
+          <button className="primary" onClick={handleSave} style={buttonStyle}>{t.save}</button>
         </div>
       </div>
     </div>

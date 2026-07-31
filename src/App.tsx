@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ConnectionConfig, SelectedItem } from "./types";
 import { useI18n, LOCALES } from "./i18n";
@@ -7,6 +7,10 @@ import DocumentList from "./components/DocumentList";
 import QueryPad from "./components/QueryPad";
 import About from "./components/About";
 import PolicySettings from "./components/PolicySettings";
+import { ENV_COLOR } from "./policy";
+
+const SIDEBAR_MIN_WIDTH = 160;
+const SIDEBAR_MAX_WIDTH = 600;
 
 export default function App() {
   const { t, locale, setLocale } = useI18n();
@@ -19,6 +23,11 @@ export default function App() {
   const [showAbout, setShowAbout] = useState(false);
   const [showPolicySettings, setShowPolicySettings] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = Number(localStorage.getItem("okzmongo-sidebar-width"));
+    return saved >= SIDEBAR_MIN_WIDTH && saved <= SIDEBAR_MAX_WIDTH ? saved : 260;
+  });
+  const isResizingSidebar = useRef(false);
 
   const loadConnections = async () => {
     const conns: ConnectionConfig[] = await invoke("list_connections");
@@ -34,6 +43,36 @@ export default function App() {
     loadConnections();
     loadConnectedIds();
   }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizingSidebar.current) return;
+      const width = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, e.clientX));
+      setSidebarWidth(width);
+    };
+    const handleMouseUp = () => {
+      if (!isResizingSidebar.current) return;
+      isResizingSidebar.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      setSidebarWidth(w => {
+        localStorage.setItem("okzmongo-sidebar-width", String(w));
+        return w;
+      });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  const handleSidebarResizeStart = () => {
+    isResizingSidebar.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
 
   const handleConnect = (id: string) => {
     setConnectedIds(prev => prev.includes(id) ? prev : [...prev, id]);
@@ -95,7 +134,7 @@ export default function App() {
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* サイドバー */}
         <div style={{
-          width: 260,
+          width: sidebarWidth,
           borderRight: "1px solid var(--border)",
           background: "var(--bg2)",
           flexShrink: 0,
@@ -114,8 +153,25 @@ export default function App() {
           />
         </div>
 
-        {/* メインエリア */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* サイドバー幅リサイズハンドル */}
+        <div
+          onMouseDown={handleSidebarResizeStart}
+          style={{
+            width: 5,
+            marginLeft: -2.5,
+            marginRight: -2.5,
+            cursor: "col-resize",
+            flexShrink: 0,
+            zIndex: 1,
+            position: "relative",
+          }}
+        />
+
+        {/* メインエリア（上端の帯で接続の環境種別を色で示す） */}
+        <div style={{
+          flex: 1, display: "flex", flexDirection: "column", overflow: "hidden",
+          borderTop: `4px solid ${activeConn ? ENV_COLOR[activeConn.environment] : "transparent"}`,
+        }}>
           {selected ? (
             <>
               {/* タブバー（コレクション選択時のみ両タブ表示、DBレベルはクエリのみ） */}

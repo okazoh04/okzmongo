@@ -97,4 +97,4 @@ React UI
 
 ## 许可证
 
-Private
+MIT License。详见 [LICENSE](LICENSE)。

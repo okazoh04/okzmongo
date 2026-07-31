@@ -97,4 +97,4 @@ React UI
 
 ## 授權條款
 
-Private
+MIT License。詳見 [LICENSE](LICENSE)。

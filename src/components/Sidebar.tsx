@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { save, open, confirm } from "@tauri-apps/plugin-dialog";
 import { ConnectionConfig, SelectedItem, defaultConnection } from "../types";
 import { ConnectionForm } from "./ConnectionForm";
+import ContextMenu from "./ContextMenu";
 import { useI18n } from "../i18n";
 import { ENV_LABEL_KEY, ENV_COLOR } from "../policy";
 import { usePolicy } from "../PolicyProvider";
@@ -34,6 +35,7 @@ export default function Sidebar({
   const [connecting, setConnecting] = useState<string | null>(null);
   const [connError, setConnError] = useState<Record<string, string>>({});
   const [editTarget, setEditTarget] = useState<"new" | string | null>(null);
+  const [connMenu, setConnMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [newDbInput, setNewDbInput] = useState<Record<string, { dbName: string; colName: string } | null>>({});
 
   useEffect(() => {
@@ -113,6 +115,14 @@ export default function Sidebar({
   const handleRemove = async (id: string) => {
     if (!await confirm(t.deleteConnectionConfirm)) return;
     await invoke("remove_connection", { id });
+    onRefresh();
+  };
+
+  const handleDuplicate = async (id: string) => {
+    const conn = connections.find(c => c.id === id);
+    if (!conn) return;
+    const { id: _drop, ...rest } = conn;
+    await invoke("add_connection", { config: { ...rest, name: `${conn.name}${t.connectionCopySuffix}` } });
     onRefresh();
   };
 
@@ -278,20 +288,32 @@ export default function Sidebar({
                   </button>
                 )}
                 <button
-                  onClick={() => setEditTarget(conn.id)}
-                  style={{ fontSize: 12, padding: "4px 9px", flexShrink: 0 }}
-                  title={t.editConnection}
+                  onClick={e => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setConnMenu({ id: conn.id, x: rect.right - 150, y: rect.bottom + 2 });
+                  }}
+                  style={{
+                    fontSize: 12, padding: "4px 9px", flexShrink: 0,
+                    lineHeight: 1, display: "flex", alignItems: "center",
+                  }}
+                  title={t.moreActions}
                 >
-                  ✎
-                </button>
-                <button
-                  onClick={() => handleRemove(conn.id)}
-                  style={{ fontSize: 12, padding: "4px 9px", color: "var(--red)", flexShrink: 0 }}
-                  title={t.deleteConnectionConfirm}
-                >
-                  ✕
+                  ⋯
                 </button>
               </div>
+
+              {connMenu?.id === conn.id && (
+                <ContextMenu
+                  x={connMenu.x}
+                  y={connMenu.y}
+                  onClose={() => setConnMenu(null)}
+                  items={[
+                    { label: t.editConnection, onClick: () => setEditTarget(conn.id) },
+                    { label: t.duplicateConnection, onClick: () => handleDuplicate(conn.id) },
+                    { label: t.deleteConnection, onClick: () => handleRemove(conn.id), danger: true },
+                  ]}
+                />
+              )}
 
               {/* エラー */}
               {connError[conn.id] && (

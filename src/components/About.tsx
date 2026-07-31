@@ -57,6 +57,9 @@ export default function About({ onClose }: Props) {
         <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
           Tauri v2 + React 19 + MongoDB v3
         </div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          {t.license}
+        </div>
         <button
           onClick={onClose}
           style={{ marginTop: 12, padding: "7px 24px" }}
