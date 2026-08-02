@@ -39,6 +39,26 @@ export interface SelectedItem {
   collection: string | null; // null = DBレベル（スクラッチパッドのみ）
 }
 
+// 接続失敗の原因（Rust側 connect_error::ConnectError と対応）
+export interface ConnectError {
+  stage: "config" | "ssh" | "tcp" | "mongo";
+  category: string;
+  detail: string;
+}
+
+export type ConnectStage = "ssh" | "tcp" | "mongo";
+export type ConnectStageStatus = "start" | "ok" | "error";
+
+export interface ConnectProgressEvent {
+  token: string;
+  stage: ConnectStage;
+  status: ConnectStageStatus;
+}
+
+export function isConnectError(e: unknown): e is ConnectError {
+  return typeof e === "object" && e !== null && "stage" in e && "category" in e && "detail" in e;
+}
+
 export function defaultConnection(): Omit<ConnectionConfig, "id"> {
   return {
     name: "",

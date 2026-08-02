@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
-import { ConnectionConfig, AuthConfig, TlsConfig, SshConfig, EnvironmentTier } from "../types";
+import { listen } from "@tauri-apps/api/event";
+import { ConnectionConfig, AuthConfig, TlsConfig, SshConfig, EnvironmentTier, ConnectError, ConnectProgressEvent, ConnectStage, ConnectStageStatus, isConnectError } from "../types";
+import { ConnectDiagnostics } from "./ConnectDiagnostics";
 import { useI18n } from "../i18n";
 import { ENV_LABEL_KEY } from "../policy";
 
@@ -64,10 +66,11 @@ export function ConnectionForm({
   onSave: (c: Omit<ConnectionConfig, "id"> & { id?: string }) => void;
   onCancel: () => void;
 }) {
-  const { t, tpl } = useI18n();
+  const { t } = useI18n();
   const [cfg, setCfg] = useState(initial);
   const [testState, setTestState] = useState<"idle" | "testing" | "ok" | "error">("idle");
-  const [testError, setTestError] = useState("");
+  const [testError, setTestError] = useState<ConnectError | null>(null);
+  const [testProgress, setTestProgress] = useState<Partial<Record<ConnectStage, ConnectStageStatus>>>({});
 
   const set = (patch: Partial<typeof cfg>) => setCfg(c => ({ ...c, ...patch }));
   const setAuth = (patch: Partial<AuthConfig>) => set({ auth: { ...cfg.auth!, ...patch } });
@@ -76,22 +79,23 @@ export function ConnectionForm({
 
   const handleTest = async () => {
     setTestState("testing");
-    setTestError("");
+    setTestError(null);
+    setTestProgress({});
+    const token = crypto.randomUUID();
+    const unlisten = await listen<ConnectProgressEvent>("connect-progress", event => {
+      if (event.payload.token !== token) return;
+      setTestProgress(prev => ({ ...prev, [event.payload.stage]: event.payload.status }));
+    });
     try {
-      await invoke("test_connection", { config: cfg });
+      await invoke("test_connection", { config: cfg, token });
       setTestState("ok");
     } catch (e) {
       setTestState("error");
-      setTestError(String(e));
+      setTestError(isConnectError(e) ? e : { stage: "mongo", category: "unknown", detail: String(e) });
+    } finally {
+      unlisten();
     }
   };
-
-  const testColor = testState === "ok" ? "var(--green)" : testState === "error" ? "var(--red)" : "var(--text-muted)";
-  const testMsg = testState === "ok"
-    ? t.testConnectionOk
-    : testState === "error"
-    ? tpl(t.testConnectionFail, { error: testError })
-    : "";
 
   return (
     <div>
@@ -189,9 +193,16 @@ export function ConnectionForm({
       </Section>
 
       {/* 接続確認結果 */}
-      {testMsg && (
-        <div style={{ fontSize: 11, color: testColor, marginBottom: 6, wordBreak: "break-all" }}>
-          {testMsg}
+      {testState === "ok" && (
+        <div style={{ fontSize: 11, color: "var(--green)", marginBottom: 6 }}>{t.testConnectionOk}</div>
+      )}
+      {(testState === "testing" || testState === "error") && (
+        <div style={{ marginBottom: 6 }}>
+          <ConnectDiagnostics
+            sshEnabled={cfg.ssh?.enabled ?? false}
+            progress={testProgress}
+            error={testState === "error" ? testError : null}
+          />
         </div>
       )}
 

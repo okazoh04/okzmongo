@@ -1,3 +1,4 @@
+use crate::connect_error::{check_tcp_reachable, classify_mongo_error, emit_progress, ConnectError};
 use crate::crypto::{decrypt_opt, encrypt_opt, load_or_create_key};
 use crate::ssh_tunnel;
 use crate::state::{AppState, AuthConfig, ConnectionConfig, TlsConfig};
@@ -165,7 +166,9 @@ pub async fn remove_connection(
 }
 
 #[tauri::command]
-pub async fn connect(state: State<'_, AppState>, id: String) -> Result<(), String> {
+pub async fn connect(app: tauri::AppHandle, state: State<'_, AppState>, id: String) -> Result<(), ConnectError> {
+    let token = id.clone();
+
     // 既存のトンネルがあれば先に閉じる
     if let Some(old) = state.ssh_tunnels.lock().unwrap().remove(&id) {
         old.shutdown();
@@ -174,12 +177,13 @@ pub async fn connect(state: State<'_, AppState>, id: String) -> Result<(), Strin
     let config = {
         let conns = state.connections.lock().unwrap();
         conns.iter().find(|c| c.id == id).cloned()
-            .ok_or_else(|| "接続設定が見つかりません".to_string())?
+            .ok_or_else(|| ConnectError::new("config", "not_found", "接続設定が見つかりません"))?
     };
 
     let ssh_active = config.ssh.as_ref().is_some_and(|s| s.enabled);
     let (mongo_host, mongo_port) = if ssh_active {
         let ssh = config.ssh.as_ref().unwrap();
+        emit_progress(&app, &token, "ssh", "start");
         let tunnel = ssh_tunnel::start_tunnel(
             &ssh.host,
             ssh.port,
@@ -189,7 +193,9 @@ pub async fn connect(state: State<'_, AppState>, id: String) -> Result<(), Strin
             &config.host,
             config.port,
         )
-        .await?;
+        .await
+        .inspect_err(|_| emit_progress(&app, &token, "ssh", "error"))?;
+        emit_progress(&app, &token, "ssh", "ok");
         let local_port = tunnel.local_port;
         state.ssh_tunnels.lock().unwrap().insert(id.clone(), tunnel);
         ("127.0.0.1".to_string(), local_port)
@@ -197,15 +203,33 @@ pub async fn connect(state: State<'_, AppState>, id: String) -> Result<(), Strin
         (config.host.clone(), config.port)
     };
 
-    let options = build_client_options(&mongo_host, mongo_port, &config.auth, &config.tls, ssh_active).await?;
-    let client = mongodb::Client::with_options(options)
-        .map_err(|e| format!("クライアント生成失敗: {e}"))?;
+    emit_progress(&app, &token, "tcp", "start");
+    check_tcp_reachable(&mongo_host, mongo_port)
+        .await
+        .inspect_err(|_| emit_progress(&app, &token, "tcp", "error"))?;
+    emit_progress(&app, &token, "tcp", "ok");
+
+    emit_progress(&app, &token, "mongo", "start");
+    let options = build_client_options(&mongo_host, mongo_port, &config.auth, &config.tls, ssh_active)
+        .await
+        .map_err(|detail| {
+            emit_progress(&app, &token, "mongo", "error");
+            ConnectError::new("mongo", "invalid_config", detail)
+        })?;
+    let client = mongodb::Client::with_options(options).map_err(|e| {
+        emit_progress(&app, &token, "mongo", "error");
+        ConnectError::new("mongo", "client_init", e.to_string())
+    })?;
 
     client
         .database("admin")
         .run_command(bson::doc! { "ping": 1 })
         .await
-        .map_err(|e| format!("MongoDB に接続できません: {e}"))?;
+        .map_err(|e| {
+            emit_progress(&app, &token, "mongo", "error");
+            classify_mongo_error(&e)
+        })?;
+    emit_progress(&app, &token, "mongo", "ok");
 
     state.active_clients.lock().unwrap().insert(id.clone(), client);
     Ok(())
@@ -226,12 +250,13 @@ pub async fn list_connected_ids(state: State<'_, AppState>) -> Result<Vec<String
 }
 
 #[tauri::command]
-pub async fn test_connection(config: ConnectionConfig) -> Result<(), String> {
+pub async fn test_connection(app: tauri::AppHandle, config: ConnectionConfig, token: String) -> Result<(), ConnectError> {
     let ssh_active = config.ssh.as_ref().is_some_and(|s| s.enabled);
 
     let (mongo_host, mongo_port, tunnel) = if ssh_active {
         let ssh = config.ssh.as_ref().unwrap();
-        let tunnel = ssh_tunnel::start_tunnel(
+        emit_progress(&app, &token, "ssh", "start");
+        let tunnel = match ssh_tunnel::start_tunnel(
             &ssh.host,
             ssh.port,
             &ssh.username,
@@ -240,22 +265,45 @@ pub async fn test_connection(config: ConnectionConfig) -> Result<(), String> {
             &config.host,
             config.port,
         )
-        .await?;
+        .await
+        {
+            Ok(t) => t,
+            Err(e) => {
+                emit_progress(&app, &token, "ssh", "error");
+                return Err(e);
+            }
+        };
+        emit_progress(&app, &token, "ssh", "ok");
         let port = tunnel.local_port;
         ("127.0.0.1".to_string(), port, Some(tunnel))
     } else {
         (config.host.clone(), config.port, None)
     };
 
-    let options = build_client_options(&mongo_host, mongo_port, &config.auth, &config.tls, ssh_active).await?;
-    let client = mongodb::Client::with_options(options)
-        .map_err(|e| format!("クライアント生成失敗: {e}"))?;
+    emit_progress(&app, &token, "tcp", "start");
+    if let Err(e) = check_tcp_reachable(&mongo_host, mongo_port).await {
+        emit_progress(&app, &token, "tcp", "error");
+        if let Some(t) = tunnel { t.shutdown(); }
+        return Err(e);
+    }
+    emit_progress(&app, &token, "tcp", "ok");
 
-    let result = client
-        .database("admin")
-        .run_command(bson::doc! { "ping": 1 })
-        .await
-        .map_err(|e| format!("MongoDB に接続できません: {e}"));
+    emit_progress(&app, &token, "mongo", "start");
+    let result = async {
+        let options = build_client_options(&mongo_host, mongo_port, &config.auth, &config.tls, ssh_active)
+            .await
+            .map_err(|detail| ConnectError::new("mongo", "invalid_config", detail))?;
+        let client = mongodb::Client::with_options(options)
+            .map_err(|e| ConnectError::new("mongo", "client_init", e.to_string()))?;
+        client
+            .database("admin")
+            .run_command(bson::doc! { "ping": 1 })
+            .await
+            .map_err(|e| classify_mongo_error(&e))
+    }
+    .await;
+
+    emit_progress(&app, &token, "mongo", if result.is_ok() { "ok" } else { "error" });
 
     if let Some(t) = tunnel {
         t.shutdown();

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { save, open, confirm } from "@tauri-apps/plugin-dialog";
-import { ConnectionConfig, SelectedItem, defaultConnection } from "../types";
+import { ConnectionConfig, SelectedItem, defaultConnection, ConnectError, ConnectProgressEvent, ConnectStage, ConnectStageStatus, isConnectError } from "../types";
 import { ConnectionForm } from "./ConnectionForm";
+import { ConnectDiagnostics } from "./ConnectDiagnostics";
 import ContextMenu from "./ContextMenu";
 import { useI18n } from "../i18n";
 import { ENV_LABEL_KEY, ENV_COLOR } from "../policy";
@@ -33,7 +35,8 @@ export default function Sidebar({
   const [collections, setCollections] = useState<Record<string, string[]>>({});
   const [databases, setDatabases] = useState<Record<string, string[]>>({});
   const [connecting, setConnecting] = useState<string | null>(null);
-  const [connError, setConnError] = useState<Record<string, string>>({});
+  const [connError, setConnError] = useState<Record<string, ConnectError>>({});
+  const [connProgress, setConnProgress] = useState<Record<string, Partial<Record<ConnectStage, ConnectStageStatus>>>>({});
   const [editTarget, setEditTarget] = useState<"new" | string | null>(null);
   const [connMenu, setConnMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [newDbInput, setNewDbInput] = useState<Record<string, { dbName: string; colName: string } | null>>({});
@@ -84,13 +87,25 @@ export default function Sidebar({
 
   const handleConnect = async (id: string) => {
     setConnecting(id);
-    setConnError(e => ({ ...e, [id]: "" }));
+    setConnError(e => { const n = { ...e }; delete n[id]; return n; });
+    setConnProgress(p => ({ ...p, [id]: {} }));
+    const unlisten = await listen<ConnectProgressEvent>("connect-progress", event => {
+      if (event.payload.token !== id) return;
+      setConnProgress(prev => ({
+        ...prev,
+        [id]: { ...prev[id], [event.payload.stage]: event.payload.status },
+      }));
+    });
     try {
       await invoke("connect", { id });
       onConnect(id);
     } catch (e) {
-      setConnError(prev => ({ ...prev, [id]: String(e) }));
+      setConnError(prev => ({
+        ...prev,
+        [id]: isConnectError(e) ? e : { stage: "mongo", category: "unknown", detail: String(e) },
+      }));
     } finally {
+      unlisten();
       setConnecting(null);
     }
   };
@@ -99,6 +114,7 @@ export default function Sidebar({
     await invoke("disconnect", { id });
     setDatabases(d => { const n = { ...d }; delete n[id]; return n; });
     setExpandedDbs(d => { const n = { ...d }; delete n[id]; return n; });
+    setConnError(e => { const n = { ...e }; delete n[id]; return n; });
     onDisconnect(id);
   };
 
@@ -316,10 +332,14 @@ export default function Sidebar({
                 />
               )}
 
-              {/* エラー */}
-              {connError[conn.id] && (
-                <div style={{ background: "var(--red)", color: "var(--bg3)", fontSize: 11, padding: "3px 10px" }}>
-                  {connError[conn.id]}
+              {/* 接続診断（進行中 or 失敗時） */}
+              {(connecting === conn.id || connError[conn.id]) && (
+                <div style={{ padding: "4px 10px", background: "var(--bg3)" }}>
+                  <ConnectDiagnostics
+                    sshEnabled={conn.ssh?.enabled ?? false}
+                    progress={connProgress[conn.id] ?? {}}
+                    error={connError[conn.id] ?? null}
+                  />
                 </div>
               )}
 

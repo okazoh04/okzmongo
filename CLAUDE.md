@@ -43,16 +43,19 @@ React UI
 |---|---|
 | `state.rs` | `AppState`（接続設定・アクティブクライアント・SSH PID を `Mutex` で保持、暗号化鍵を `OnceLock` で保持） |
 | `crypto.rs` | AES-256-GCM によるパスワード暗号化/復号（`enc:` プレフィックスで暗号化済みを識別） |
+| `connect_error.rs` | 接続失敗の原因分類（`ConnectError { stage, category, detail }`）・TCP到達性チェック・進捗イベント (`connect-progress`) の発行 |
 | `commands/connection.rs` | 接続管理：SSH トンネル起動・TLS オプション構築・MongoDB ping 確認、接続設定の保存/読み込み |
 | `commands/database.rs` | DB/コレクション操作：find・count・insert・update・delete・drop・create |
 | `commands/export.rs` | コレクション単位のインポート/エクスポート（NDJSON）+ DB 単位のダンプ/リストア（ZIP） |
 | `lib.rs` | `tauri::generate_handler![]` でコマンド登録、起動時に暗号化鍵ロードと接続設定の復元 |
 
-**接続確立の流れ（`connect` コマンド）:**
-1. SSH 有効なら `ssh -N -L <local>:<mongo_host>:<mongo_port>` を spawn し、`std::mem::forget` でプロセスを保持（PID を `ssh_pids` に記録）
-2. ポートが開くまで 200ms ポーリング（最大 5 秒）
+**接続確立の流れ（`connect`/`test_connection` コマンド）:**
+1. SSH 有効なら `ssh_tunnel::start_tunnel`（`russh` によるトンネル）を張る。TCP接続確立・鍵/パスワード認証の応答待ちにはそれぞれ `SSH_STEP_TIMEOUT`（10秒）を適用（`russh` 自体は既定のタイムアウトを持たず、到達不能ホストや無応答サーバーに対して無期限に待機してしまうため）
+2. `connect_error::check_tcp_reachable` で `mongo_host:mongo_port` への生TCP到達性を確認（5秒タイムアウト）
 3. `ClientOptions::parse` → 認証 (`Credential`) / TLS (`TlsOptions`) を設定
 4. `admin.ping` で疎通確認
+
+各段階の開始/成功/失敗は `connect-progress` イベント（`{ token, stage, status }`）としてフロントへ通知され、失敗時は `ConnectError { stage, category, detail }` を返す。`stage`/`category` はフロント側 `src/connectDiagnostics.ts` で i18n メッセージにマッピングし、`detail`（元のエラー全文）は折りたたみ表示する。`token` は `connect` では接続ID、`test_connection` ではフロントが生成する一時UUID。
 
 **TLS の注意**: `TlsOptions` は `#[non_exhaustive]` なので struct literal 不可。`TlsOptions::default()` 後にフィールドを直接設定すること。
 
@@ -70,6 +73,8 @@ React UI
 | `App.tsx` | レイアウト（タイトルバー・サイドバー・メインエリア・ステータスバー）・フィルタ状態管理・言語切替ピッカー |
 | `components/Sidebar.tsx` | 接続ツリー（接続 → DB → コレクション）・接続フォームのインライン展開・DB ダンプ/リストア |
 | `components/ConnectionForm.tsx` | 接続設定フォーム（基本・認証・TLS・SSH の4セクション） |
+| `components/ConnectDiagnostics.tsx` | 接続診断UI（SSH/TCP/MongoDB各段階の進捗表示、失敗理由 + 詳細の折りたたみ表示） |
+| `connectDiagnostics.ts` | Rust側 `ConnectError` の `stage`/`category` を i18n メッセージキーにマッピング |
 | `components/DocumentList.tsx` | ドキュメント一覧・ページネーション（50件）・エクスポート/インポートボタン統合 |
 | `components/DocumentEditor.tsx` | ドキュメント追加・編集モーダル（JSON テキストエリア） |
 | `components/ExportImport.tsx` | コレクション単位のエクスポート/インポートUI |
