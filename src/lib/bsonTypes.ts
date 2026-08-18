@@ -134,6 +134,53 @@ export function formatDisplayValue(value: unknown): string {
   }
 }
 
+const PREVIEW_MAX_ITEMS = 20;
+const PREVIEW_MAX_LEN = 300;
+
+function previewLeaf(value: unknown): string {
+  switch (inferType(value)) {
+    case "objectId":
+      return `ObjectId("${(value as { $oid: string }).$oid}")`;
+    case "date":
+      return `ISODate("${new Date(unwrapValue(value) as number).toISOString()}")`;
+    case "string":
+      return JSON.stringify(value);
+    case "int32":
+      return (value as { $numberInt: string }).$numberInt;
+    case "int64":
+      return (value as { $numberLong: string }).$numberLong;
+    case "null":
+      return "null";
+    default:
+      return String(value);
+  }
+}
+
+function buildJsonPreview(value: unknown): string {
+  const type = inferType(value);
+  if (type === "array") {
+    const arr = value as unknown[];
+    if (arr.length === 0) return "[]";
+    const shown = arr.slice(0, PREVIEW_MAX_ITEMS).map(buildJsonPreview);
+    if (arr.length > PREVIEW_MAX_ITEMS) shown.push(`… (${arr.length})`);
+    return `[ ${shown.join(", ")} ]`;
+  }
+  if (type === "object") {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) return "{}";
+    const shown = entries.slice(0, PREVIEW_MAX_ITEMS).map(([k, v]) => `${k}: ${buildJsonPreview(v)}`);
+    if (entries.length > PREVIEW_MAX_ITEMS) shown.push(`… (${entries.length})`);
+    return `{ ${shown.join(", ")} }`;
+  }
+  return previewLeaf(value);
+}
+
+/** object/array値をNoSQLBooster風のコンパクトなJSON文字列にする（Value列でのコンテナ表示用） */
+export function formatJsonPreview(value: unknown): string {
+  const text = buildJsonPreview(value);
+  return text.length > PREVIEW_MAX_LEN ? `${text.slice(0, PREVIEW_MAX_LEN - 1)}…` : text;
+}
+
 /** バッジに表示する短いラベル（型を一目で判別できるよう常にテキストで表示） */
 export const TYPE_ICON: Record<BsonTypeTag, string> = {
   objectId: "OID",

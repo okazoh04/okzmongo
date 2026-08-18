@@ -2,8 +2,10 @@ import { useRef, useState } from "react";
 import TreeNode from "./TreeNode";
 import { joinPath, setAtPath, getAtPath, deleteAtPath } from "../../lib/treePath";
 import { inferType, formatDisplayValue } from "../../lib/bsonTypes";
+import { flattenTree } from "../../lib/treeFlatten";
 import ContextMenu, { type ContextMenuItem } from "../ContextMenu";
 import JsonEditDialog from "../JsonEditDialog";
+import { TREE_GRID_TEMPLATE } from "./gridLayout";
 import { useI18n } from "../../i18n";
 
 interface Props {
@@ -126,6 +128,7 @@ export default function DocumentTree({ value, onChange, onSave, readOnly = false
   };
 
   const jsonEditValue = jsonEditPath === null ? null : jsonEditPath === "" ? value : getAtPath(value, jsonEditPath);
+  const flatRows = flattenTree(value, expandedPaths, readOnly);
 
   return (
     <div
@@ -148,37 +151,70 @@ export default function DocumentTree({ value, onChange, onSave, readOnly = false
         outline: "none",
       }}
     >
-      {Object.entries(value).map(([key, val]) => (
-        <TreeNode
-          key={key}
-          path={joinPath("", key)}
-          fieldKey={key}
-          value={val}
-          depth={0}
-          expandedPaths={expandedPaths}
-          onToggleExpand={toggleExpand}
-          editingPath={editingPath}
-          onStartEdit={setEditingPath}
-          onCommitEdit={handleCommitEdit}
-          onSaveNow={() => onSave?.()}
-          onCancelEdit={handleCancelEdit}
-          onAddField={handleAddField}
-          onAddArrayItem={handleAddArrayItem}
-          onDelete={handleDelete}
-          onContextMenu={handleContextMenu}
-          readOnly={readOnly}
-        />
-      ))}
-      {!readOnly && (
-        <div style={{ padding: "2px 4px" }}>
-          <button
-            onClick={() => handleAddField("")}
-            style={{ fontSize: 10, padding: "1px 6px", color: "var(--text-sub)", background: "none" }}
-          >
-            {t.treeAddField}
-          </button>
+      {Object.keys(value).length > 0 && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: TREE_GRID_TEMPLATE,
+            columnGap: 6,
+            padding: "1px 4px 3px",
+            marginBottom: 2,
+            borderBottom: "1px solid var(--border)",
+            color: "var(--text-muted)",
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: 0.3,
+            textTransform: "uppercase",
+          }}
+        >
+          <span>{t.treeColKey}</span>
+          <span>{t.treeColValue}</span>
+          <span>{t.treeColType}</span>
+          <span />
         </div>
       )}
+      {(() => {
+        let dataRowIndex = 0;
+        return flatRows.map((row) => {
+          if (row.kind === "add") {
+            return (
+              <div
+                key={`add:${row.parentPath}`}
+                style={{ padding: "2px 4px", paddingLeft: row.depth * 16 + 4 }}
+              >
+                <button
+                  onClick={() =>
+                    row.parentType === "array" ? handleAddArrayItem(row.parentPath) : handleAddField(row.parentPath)
+                  }
+                  style={{ fontSize: 12, padding: "3px 8px", color: "var(--text-sub)", background: "none" }}
+                >
+                  {row.parentType === "array" ? t.treeAddArrayItem : t.treeAddField}
+                </button>
+              </div>
+            );
+          }
+          return (
+            <TreeNode
+              key={row.path}
+              path={row.path}
+              fieldKey={row.fieldKey}
+              value={row.value}
+              depth={row.depth}
+              rowIndex={dataRowIndex++}
+              expanded={expandedPaths.has(row.path)}
+              onToggleExpand={toggleExpand}
+              editingPath={editingPath}
+              onStartEdit={setEditingPath}
+              onCommitEdit={handleCommitEdit}
+              onSaveNow={() => onSave?.()}
+              onCancelEdit={handleCancelEdit}
+              onDelete={handleDelete}
+              onContextMenu={handleContextMenu}
+              readOnly={readOnly}
+            />
+          );
+        });
+      })()}
       {menu && <ContextMenu x={menu.x} y={menu.y} items={buildMenuItems(menu)} onClose={() => setMenu(null)} />}
       {jsonEditPath !== null && (
         <JsonEditDialog
