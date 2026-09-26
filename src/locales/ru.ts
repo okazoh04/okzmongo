@@ -1,5 +1,5 @@
 const ru = {
-  about: "О программе OkzMongo",
+  about: "О программе okzMongo",
   selectCollection: "Выберите подключение и коллекцию в боковой панели",
   search: "Поиск",
   clear: "Очистить",

@@ -1,5 +1,5 @@
 const ko = {
-  about: "OkzMongo 정보",
+  about: "okzMongo 정보",
   selectCollection: "왼쪽 사이드바에서 연결하고 컬렉션을 선택하세요",
   search: "검색",
   clear: "지우기",

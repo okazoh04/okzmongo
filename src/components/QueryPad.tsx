@@ -466,11 +466,11 @@ export default function QueryPad({ connectionId, db, initialQuery, environment }
           display: "flex", alignItems: "center", gap: 8, padding: "6px 12px",
           borderTop: "1px solid var(--border)", background: "var(--bg2)", flexShrink: 0,
         }}>
-          <button onClick={() => runQuery(0)} disabled={result.page === 0}>|◀</button>
-          <button onClick={() => runQuery(result.page - 1)} disabled={result.page === 0}>◀</button>
+          <button onClick={() => runQuery(0)} disabled={result.page === 0}>|◀️</button>
+          <button onClick={() => runQuery(result.page - 1)} disabled={result.page === 0}>◀️</button>
           <span style={{ fontSize: 12, color: "var(--text-sub)" }}>{result.page + 1} / {totalPages}</span>
-          <button onClick={() => runQuery(result.page + 1)} disabled={result.page >= totalPages - 1}>▶</button>
-          <button onClick={() => runQuery(totalPages - 1)} disabled={result.page >= totalPages - 1}>▶|</button>
+          <button onClick={() => runQuery(result.page + 1)} disabled={result.page >= totalPages - 1}>▶️</button>
+          <button onClick={() => runQuery(totalPages - 1)} disabled={result.page >= totalPages - 1}>▶️|</button>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 const no = {
-  about: "Om OkzMongo",
+  about: "Om okzMongo",
   selectCollection: "Velg en tilkobling og samling i sidepanelet",
   search: "Søk",
   clear: "Tøm",

@@ -1,4 +1,4 @@
-# OkzMongo
+# okzMongo
 
 A MongoDB GUI client built with Tauri v2 + React 19.
 

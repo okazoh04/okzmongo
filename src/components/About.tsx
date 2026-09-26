@@ -40,8 +40,8 @@ export default function About({ onClose }: Props) {
           gap: 12,
         }}
       >
-        <img src={icon} alt="OkzMongo" style={{ width: 80, height: 80, borderRadius: 16, marginBottom: 4 }}/>
-        <div style={{ fontWeight: 700, fontSize: 20, color: "var(--accent2)" }}>OkzMongo</div>
+        <img src={icon} alt="okzMongo" style={{ width: 80, height: 80, borderRadius: 16, marginBottom: 4 }}/>
+        <div style={{ fontWeight: 700, fontSize: 20, color: "var(--accent2)" }}>okzMongo</div>
         <div style={{ fontSize: 13, color: "var(--text-sub)" }}>
           {t.appDescription}
         </div>

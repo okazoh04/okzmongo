@@ -1,5 +1,5 @@
 const zhTW = {
-  about: "關於 OkzMongo",
+  about: "關於 okzMongo",
   selectCollection: "請從左側邊欄連接並選擇集合",
   search: "搜尋",
   clear: "清除",

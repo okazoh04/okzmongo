@@ -107,7 +107,7 @@ export default function App() {
         gap: 12,
         flexShrink: 0,
       }}>
-        <span style={{ fontWeight: 700, color: "var(--accent2)", fontSize: 14 }}>OkzMongo</span>
+        <span style={{ fontWeight: 700, color: "var(--accent2)", fontSize: 14 }}>okzMongo</span>
         {activeConn && selected && (
           <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
             <span style={{ color: "var(--green)" }}>{activeConn.name}</span>
@@ -120,12 +120,12 @@ export default function App() {
         <div style={{ flex: 1 }} />
         <button
           onClick={() => setShowPolicySettings(true)}
-          style={{ fontSize: 11, padding: "2px 8px", opacity: 0.7 }}
+          style={{ fontSize: 16, padding: "3px 9px", opacity: 0.7 }}
           title={t.policySettingsTitle}
-        >⚙</button>
+        >⚙️</button>
         <button
           onClick={() => setShowAbout(true)}
-          style={{ fontSize: 11, padding: "2px 8px", opacity: 0.7 }}
+          style={{ fontSize: 13, padding: "3px 10px", opacity: 0.7 }}
           title={t.about}
         >?</button>
       </div>

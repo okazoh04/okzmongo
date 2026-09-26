@@ -1,0 +1,16 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- okz シリーズ（Linux）共通: 紫単色背景 + 濃色パネル。座標は 32 の倍数に揃える -->
+  <rect x="0" y="0" width="1024" height="1024" rx="224" fill="#cba6f7"/>
+  <rect x="160" y="224" width="704" height="576" rx="64" fill="#1e1e2e"/>
+  <!-- データベース（3 段のシリンダー） -->
+  <g fill="#cdd6f4">
+    <ellipse cx="416" cy="352" rx="160" ry="48"/>
+    <path d="M 256 384 A 160 48 0 0 0 576 384 L 576 480 A 160 48 0 0 1 256 480 Z"/>
+    <path d="M 256 512 A 160 48 0 0 0 576 512 L 576 608 A 160 48 0 0 1 256 608 Z"/>
+    <path d="M 256 640 A 160 48 0 0 0 576 640 L 576 672 A 160 48 0 0 1 256 672 Z"/>
+  </g>
+  <!-- 葉 -->
+  <path d="M 736 320 C 832 416 832 576 736 672 C 640 576 640 416 736 320 Z" fill="#a6e3a1"/>
+  <rect x="728" y="448" width="16" height="288" rx="8" fill="#1e1e2e"/>
+  <rect x="728" y="672" width="16" height="64" rx="8" fill="#a6e3a1"/>
+</svg>

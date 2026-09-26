@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-**OkzMongo** — Tauri v2 + React 19 + MongoDB v3 で作成した MongoDB GUI クライアント。
+**okzMongo** — Tauri v2 + React 19 + MongoDB v3 で作成した MongoDB GUI クライアント。
 
 ## コマンド
 

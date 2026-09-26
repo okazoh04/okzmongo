@@ -1,5 +1,5 @@
 const ar = {
-  about: "حول OkzMongo",
+  about: "حول okzMongo",
   selectCollection: "اختر اتصالاً ومجموعة من الشريط الجانبي",
   search: "بحث",
   clear: "مسح",

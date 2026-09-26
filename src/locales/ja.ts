@@ -1,5 +1,5 @@
 const ja = {
-  about: "OkzMongo について",
+  about: "okzMongo について",
   selectCollection: "左のサイドバーから接続してコレクションを選択してください",
   search: "検索",
   clear: "クリア",

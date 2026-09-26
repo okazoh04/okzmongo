@@ -1,5 +1,5 @@
 const th = {
-  about: "เกี่ยวกับ OkzMongo",
+  about: "เกี่ยวกับ okzMongo",
   selectCollection: "เลือกการเชื่อมต่อและคอลเลกชันจากแถบด้านข้าง",
   search: "ค้นหา",
   clear: "ล้าง",

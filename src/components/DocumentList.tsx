@@ -263,13 +263,13 @@ export default function DocumentList({ connectionId, db, collection, filterJson,
           background: "var(--bg2)",
           flexShrink: 0,
         }}>
-          <button onClick={() => setPage(0)} disabled={page === 0}>|◀</button>
-          <button onClick={() => setPage((p) => p - 1)} disabled={page === 0}>◀</button>
+          <button onClick={() => setPage(0)} disabled={page === 0}>|◀️</button>
+          <button onClick={() => setPage((p) => p - 1)} disabled={page === 0}>◀️</button>
           <span style={{ fontSize: 12, color: "var(--text-sub)" }}>
             {page + 1} / {totalPages}
           </span>
-          <button onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>▶</button>
-          <button onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1}>▶|</button>
+          <button onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>▶️</button>
+          <button onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1}>▶️|</button>
         </div>
       )}
 

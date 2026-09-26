@@ -1,5 +1,5 @@
 const it = {
-  about: "Informazioni su OkzMongo",
+  about: "Informazioni su okzMongo",
   selectCollection: "Seleziona una connessione e una collection dalla barra laterale",
   search: "Cerca",
   clear: "Cancella",

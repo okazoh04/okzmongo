@@ -1,4 +1,4 @@
-# OkzMongo
+# okzMongo
 
 Tauri v2 + React 19로 만든 MongoDB GUI 클라이언트.
 

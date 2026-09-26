@@ -1,5 +1,5 @@
 const zhCN = {
-  about: "关于 OkzMongo",
+  about: "关于 okzMongo",
   selectCollection: "请从左侧边栏连接并选择集合",
   search: "搜索",
   clear: "清除",

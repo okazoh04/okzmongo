@@ -1,5 +1,5 @@
 const de = {
-  about: "Über OkzMongo",
+  about: "Über okzMongo",
   selectCollection: "Wähle eine Verbindung und eine Collection in der Seitenleiste aus",
   search: "Suchen",
   clear: "Leeren",

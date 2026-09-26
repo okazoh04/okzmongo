@@ -1,5 +1,5 @@
 const kk = {
-  about: "OkzMongo туралы",
+  about: "okzMongo туралы",
   selectCollection: "Бүйір панельден қосылым мен коллекцияны таңдаңыз",
   search: "Іздеу",
   clear: "Тазалау",

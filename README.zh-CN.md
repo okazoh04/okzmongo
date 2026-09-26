@@ -1,4 +1,4 @@
-# OkzMongo
+# okzMongo
 
 基于 Tauri v2 + React 19 构建的 MongoDB 图形界面客户端。
 

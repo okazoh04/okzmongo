@@ -1,5 +1,5 @@
 const nl = {
-  about: "Over OkzMongo",
+  about: "Over okzMongo",
   selectCollection: "Selecteer een verbinding en collectie in de zijbalk",
   search: "Zoeken",
   clear: "Wissen",

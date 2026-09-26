@@ -1,5 +1,5 @@
 const es = {
-  about: "Acerca de OkzMongo",
+  about: "Acerca de okzMongo",
   selectCollection: "Selecciona una conexión y una colección en la barra lateral",
   search: "Buscar",
   clear: "Borrar",

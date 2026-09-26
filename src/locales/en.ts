@@ -1,5 +1,5 @@
 const en = {
-  about: "About OkzMongo",
+  about: "About okzMongo",
   selectCollection: "Select a connection and collection from the sidebar",
   search: "Search",
   clear: "Clear",

@@ -30,7 +30,7 @@ mkdir -p "$(dirname "$DESKTOP_FILE")"
 cat > "$DESKTOP_FILE" <<EOF
 [Desktop Entry]
 Type=Application
-Name=OkzMongo
+Name=okzMongo
 Comment=MongoDB GUI クライアント
 Exec=env GDK_BACKEND=x11 WEBKIT_DISABLE_DMABUF_RENDERER=1 $BIN_DIR/okzmongo
 Icon=okzmongo

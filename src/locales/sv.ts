@@ -1,5 +1,5 @@
 const sv = {
-  about: "Om OkzMongo",
+  about: "Om okzMongo",
   selectCollection: "Välj en anslutning och samling i sidopanelen",
   search: "Sök",
   clear: "Rensa",

@@ -1,4 +1,4 @@
-# OkzMongo
+# okzMongo
 
 Tauri v2 + React 19 で作成した MongoDB GUI クライアント。
 

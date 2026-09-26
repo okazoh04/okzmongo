@@ -1,5 +1,5 @@
 const vi = {
-  about: "Giới thiệu về OkzMongo",
+  about: "Giới thiệu về okzMongo",
   selectCollection: "Chọn một kết nối và collection từ thanh bên",
   search: "Tìm kiếm",
   clear: "Xóa",

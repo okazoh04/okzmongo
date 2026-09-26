@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-echo "==> OkzMongo ビルド開始"
+echo "==> okzMongo ビルド開始"
 
 # Wayland 環境での既知バグ回避（WebKit2GTK: Error 71 EPROTO / GBM バッファエラー）
 export GDK_BACKEND=x11
