@@ -78,3 +78,33 @@ export function deleteAtPath(doc: unknown, path: string): unknown {
   if (parentSegments.length === 0) return removeKey(parent);
   return setRecursive(doc, parentSegments, removeKey(parent));
 }
+
+/**
+ * 指定パスの末尾キーをリネームする。挿入順を維持したまま新しいドキュメントを返す。
+ * 配列要素（末尾がインデックス）や、リネーム先が親内で既に使われている場合は null を返す。
+ */
+export function renameKeyAtPath(
+  doc: unknown,
+  path: string,
+  newKey: string
+): { doc: unknown; newPath: string } | null {
+  const segments = parsePathSegments(path);
+  if (segments.length === 0) return null;
+  const oldKey = segments[segments.length - 1];
+  if (typeof oldKey === "number") return null;
+  const parentSegments = segments.slice(0, -1);
+  const parentPath = joinSegments(parentSegments);
+  const parent = parentSegments.length === 0 ? doc : getAtPath(doc, parentPath);
+  const parentObj = (parent as Record<string, unknown>) ?? {};
+
+  if (oldKey === newKey) return { doc, newPath: path };
+  if (Object.prototype.hasOwnProperty.call(parentObj, newKey)) return null;
+
+  const renamedParent: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(parentObj)) {
+    renamedParent[k === oldKey ? newKey : k] = v;
+  }
+  const newDoc =
+    parentSegments.length === 0 ? renamedParent : setRecursive(doc, parentSegments, renamedParent);
+  return { doc: newDoc, newPath: joinPath(parentPath, newKey) };
+}

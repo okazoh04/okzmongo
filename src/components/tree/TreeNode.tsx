@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   inferType,
   formatDisplayValue,
@@ -12,6 +12,67 @@ import ValueEditor from "./ValueEditor";
 import { TREE_GRID_TEMPLATE } from "./gridLayout";
 import { useI18n } from "../../i18n";
 
+interface KeyEditorProps {
+  initialValue: string;
+  onCommit: (newKey: string) => string | null;
+  onCancel: () => void;
+  onSaveNow: () => void;
+}
+
+function KeyEditor({ initialValue, onCommit, onCancel, onSaveNow }: KeyEditorProps) {
+  const { t } = useI18n();
+  const ref = useRef<HTMLInputElement>(null);
+  const [val, setVal] = useState(initialValue);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    ref.current?.focus();
+    ref.current?.select();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const commit = (thenSave: boolean) => {
+    const trimmed = val.trim();
+    if (!trimmed) {
+      setErr(t.treeKeyEmpty);
+      return;
+    }
+    const error = onCommit(trimmed);
+    if (error) {
+      setErr(error);
+      return;
+    }
+    setErr(null);
+    if (thenSave) onSaveNow();
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+      <input
+        ref={ref}
+        type="text"
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            onCancel();
+            return;
+          }
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit(e.ctrlKey || e.metaKey);
+          }
+        }}
+        onBlur={() => commit(false)}
+        style={{ fontSize: 13, padding: "4px 8px", width: 160 }}
+      />
+      {err && <span style={{ color: "var(--red)", fontSize: 11 }}>{err}</span>}
+    </div>
+  );
+}
+
 export interface TreeNodeProps {
   path: string;
   fieldKey: string;
@@ -19,11 +80,15 @@ export interface TreeNodeProps {
   depth: number;
   /** 表示中のデータ行のみを数えた通し番号（縞模様の判定に使用。配列インデックス由来の不変値） */
   rowIndex: number;
+  isArrayItem: boolean;
   expanded: boolean;
   editingPath: string | null;
+  editingField: "key" | "value" | null;
   onToggleExpand: (path: string) => void;
-  onStartEdit: (path: string) => void;
+  onStartEditValue: (path: string) => void;
+  onStartEditKey: (path: string) => void;
   onCommitEdit: (path: string, newValue: unknown) => void;
+  onCommitKey: (path: string, newKey: string) => string | null;
   onSaveNow: () => void;
   onCancelEdit: () => void;
   onDelete: (path: string) => void;
@@ -38,11 +103,15 @@ export default function TreeNode(props: TreeNodeProps) {
     value,
     depth,
     rowIndex,
+    isArrayItem,
     expanded,
     editingPath,
+    editingField,
     onToggleExpand,
-    onStartEdit,
+    onStartEditValue,
+    onStartEditKey,
     onCommitEdit,
+    onCommitKey,
     onSaveNow,
     onCancelEdit,
     onDelete,
@@ -52,7 +121,9 @@ export default function TreeNode(props: TreeNodeProps) {
   const { t } = useI18n();
   const type = inferType(value);
   const isContainer = type === "object" || type === "array";
-  const isEditing = editingPath === path;
+  const isEditingValue = editingPath === path && editingField === "value";
+  const isEditingKey = editingPath === path && editingField === "key";
+  const canRenameKey = !isArrayItem && !readOnly;
   const [error, setError] = useState<string | null>(null);
   const [hover, setHover] = useState(false);
 
@@ -100,12 +171,36 @@ export default function TreeNode(props: TreeNodeProps) {
         <span style={{ width: 12, color: "var(--text-muted)", flexShrink: 0 }}>
           {isContainer ? (expanded ? "▾" : "▸") : ""}
         </span>
-        <span style={{ color: "var(--text-sub)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {fieldKey}
-        </span>
+        {isEditingKey ? (
+          <KeyEditor
+            initialValue={fieldKey}
+            onCommit={(newKey) => onCommitKey(path, newKey)}
+            onSaveNow={onSaveNow}
+            onCancel={onCancelEdit}
+          />
+        ) : (
+          <span
+            onDoubleClick={(e) => {
+              if (canRenameKey) {
+                e.stopPropagation();
+                onStartEditKey(path);
+              }
+            }}
+            title={canRenameKey ? t.treeRenameFieldHint : undefined}
+            style={{
+              color: "var(--text-sub)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              cursor: canRenameKey ? "text" : undefined,
+            }}
+          >
+            {fieldKey}
+          </span>
+        )}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-        {!isContainer && isEditing ? (
+        {!isContainer && isEditingValue ? (
           <ValueEditor
             type={type}
             initialRaw={unwrapValue(value)}
@@ -118,7 +213,7 @@ export default function TreeNode(props: TreeNodeProps) {
             onClick={(e) => {
               if (!isContainer && !readOnly) {
                 e.stopPropagation();
-                onStartEdit(path);
+                onStartEditValue(path);
               }
             }}
             title={isContainer ? formatJsonPreview(value) : formatDisplayValue(value)}

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import TreeNode from "./TreeNode";
-import { joinPath, setAtPath, getAtPath, deleteAtPath } from "../../lib/treePath";
+import { joinPath, setAtPath, getAtPath, deleteAtPath, renameKeyAtPath } from "../../lib/treePath";
 import { inferType, formatDisplayValue } from "../../lib/bsonTypes";
 import { flattenTree } from "../../lib/treeFlatten";
 import ContextMenu, { type ContextMenuItem } from "../ContextMenu";
@@ -22,10 +22,17 @@ interface MenuState {
   value: unknown;
 }
 
+interface EditingState {
+  path: string;
+  field: "key" | "value";
+  /** キーのコミット後、続けて値の編集モードへ移る（新規フィールド追加直後の入力フロー用） */
+  thenEditValue?: boolean;
+}
+
 export default function DocumentTree({ value, onChange, onSave, readOnly = false }: Props) {
   const { t } = useI18n();
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
-  const [editingPath, setEditingPath] = useState<string | null>(null);
+  const [editing, setEditing] = useState<EditingState | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [jsonEditPath, setJsonEditPath] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -52,13 +59,26 @@ export default function DocumentTree({ value, onChange, onSave, readOnly = false
   const handleCommitEdit = (path: string, newValue: unknown) => {
     const next = setAtPath(value, path, newValue) as Record<string, unknown>;
     onChange?.(next);
-    setEditingPath(null);
+    setEditing(null);
     refocusRoot();
   };
 
   const handleCancelEdit = () => {
-    setEditingPath(null);
+    setEditing(null);
     refocusRoot();
+  };
+
+  const handleCommitKey = (path: string, newKey: string): string | null => {
+    const result = renameKeyAtPath(value, path, newKey);
+    if (result === null) return t.treeDuplicateKey;
+    onChange?.(result.doc as Record<string, unknown>);
+    if (editing?.thenEditValue) {
+      setEditing({ path: result.newPath, field: "value" });
+    } else {
+      setEditing(null);
+    }
+    refocusRoot();
+    return null;
   };
 
   const handleAddField = (parentPath: string) => {
@@ -75,7 +95,7 @@ export default function DocumentTree({ value, onChange, onSave, readOnly = false
       : updatedParent;
     onChange?.(next);
     expand(parentPath);
-    setEditingPath(joinPath(parentPath, newKey));
+    setEditing({ path: joinPath(parentPath, newKey), field: "key", thenEditValue: true });
   };
 
   const handleAddArrayItem = (parentPath: string) => {
@@ -84,7 +104,7 @@ export default function DocumentTree({ value, onChange, onSave, readOnly = false
     const next = setAtPath(value, parentPath, updatedParent) as Record<string, unknown>;
     onChange?.(next);
     expand(parentPath);
-    setEditingPath(joinPath(parentPath, updatedParent.length - 1));
+    setEditing({ path: joinPath(parentPath, updatedParent.length - 1), field: "value" });
   };
 
   const handleDelete = (path: string) => {
@@ -110,6 +130,10 @@ export default function DocumentTree({ value, onChange, onSave, readOnly = false
     if (!isRoot) {
       const fieldName = m.path.split(/[.[\]]+/).filter(Boolean).pop() ?? "";
       items.push({ label: t.ctxCopyFieldName, onClick: () => navigator.clipboard.writeText(fieldName) });
+    }
+    const isArrayItem = /\[\d+\]$/.test(m.path);
+    if (!isRoot && !isArrayItem && !readOnly) {
+      items.push({ label: t.ctxRenameField, onClick: () => setEditing({ path: m.path, field: "key" }) });
     }
     items.push({
       label: isRoot ? t.ctxEditJsonRoot : t.ctxEditJson,
@@ -201,11 +225,15 @@ export default function DocumentTree({ value, onChange, onSave, readOnly = false
               value={row.value}
               depth={row.depth}
               rowIndex={dataRowIndex++}
+              isArrayItem={row.isArrayItem}
               expanded={expandedPaths.has(row.path)}
+              editingPath={editing?.path ?? null}
+              editingField={editing?.field ?? null}
               onToggleExpand={toggleExpand}
-              editingPath={editingPath}
-              onStartEdit={setEditingPath}
+              onStartEditValue={(path) => setEditing({ path, field: "value" })}
+              onStartEditKey={(path) => setEditing({ path, field: "key" })}
               onCommitEdit={handleCommitEdit}
+              onCommitKey={handleCommitKey}
               onSaveNow={() => onSave?.()}
               onCancelEdit={handleCancelEdit}
               onDelete={handleDelete}

@@ -6,7 +6,7 @@ import { inferType } from "./bsonTypes";
 import { joinPath } from "./treePath";
 
 export type FlatTreeItem =
-  | { kind: "field"; path: string; fieldKey: string; value: unknown; depth: number }
+  | { kind: "field"; path: string; fieldKey: string; value: unknown; depth: number; isArrayItem: boolean }
   | { kind: "add"; parentPath: string; parentType: "object" | "array"; depth: number };
 
 function containerEntries(container: unknown, containerType: "object" | "array"): [string | number, unknown][] {
@@ -25,7 +25,7 @@ export function flattenTree(
     for (const [key, val] of containerEntries(container, containerType)) {
       const path = joinPath(containerPath, key);
       const fieldKey = typeof key === "number" ? `[${key}]` : key;
-      out.push({ kind: "field", path, fieldKey, value: val, depth });
+      out.push({ kind: "field", path, fieldKey, value: val, depth, isArrayItem: containerType === "array" });
       const childType = inferType(val);
       if ((childType === "object" || childType === "array") && expandedPaths.has(path)) {
         walk(val, childType, path, depth + 1);
