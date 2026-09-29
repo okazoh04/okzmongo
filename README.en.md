@@ -1,25 +1,59 @@
 # okzMongo
 
-A MongoDB GUI client built with Tauri v2 + React 19.
+A lightweight, fast MongoDB GUI client built with Tauri v2 + React 19.
+Designed around two ideas: **touching production databases safely** and **moving data in and out without limits**.
 
 **Other languages:**
 [日本語](README.md) | [中文（简体）](README.zh-CN.md) | [中文（繁體）](README.zh-TW.md) | [한국어](README.ko.md)
 
 ---
 
-## Features
+## Why okzMongo
 
-- Connect / disconnect to MongoDB (manage multiple connection profiles)
-- Tree view of databases and collections
-- Document list with pagination (50 docs per page)
-- Add, edit, and delete documents
-- Create and drop collections
-- Database dump (ZIP) / restore (ZIP)
-- Export / import in Extended JSON format (preserves `$oid`, `$date`, etc.)
+### 🛡 Fine-grained permissions per connection target
+
+Assign each connection an **environment tier (Production / Staging / Development)**, then set `Allow` / `Warn` / `Block` for every operation in an **environment × operation** policy matrix.
+
+| Operation | Production (default) | Staging (default) | Development (default) |
+|---|---|---|---|
+| Insert document | Warn | Allow | Allow |
+| Update document | Warn | Allow | Allow |
+| Delete document | Warn | Warn | Allow |
+| Drop collection | Warn | Warn | Allow |
+| Import | **Block** | Warn | Allow |
+| Restore database | **Block** | Warn | Allow |
+| Writes from the query pad (insert/update/delete) | Warn | Allow | Allow |
+
+- "Warn" shows a confirmation dialog framed in the environment colour; "Block" shows a dialog and refuses to run
+- Protects not only GUI actions but also writes issued from the query pad
+- Edit the whole matrix from the ⚙ button in the title bar (every cell is individually configurable)
+- Just picking the right connection prevents accidents such as an unintended drop or full-collection import on production
+
+### 📦 Import / export without limits
+
+- **Per collection**: export / import every document with no document-count cap (Extended JSON, fully preserving BSON types such as `$oid` and `$date`)
+- **Per database**: dump all collections into a single ZIP and restore from a ZIP
+- Independent of the 50-docs-per-page display pagination — **all documents are included**
+- Ready for server-to-server migration, backups, and copying data into staging
+
+### Other highlights
+
+- **Query pad**: run mongosh-style JavaScript expressions, with content assist (collections, methods, operators, field names; `Ctrl+Space`)
+- **Query log panel**: see the queries actually sent to MongoDB (mongosh notation + Extended JSON, duration, success/failure) in chronological order
+- **Document tree**: Key / Value / Type columns, inline editing, key renaming (double-click / context menu), BSON type support
+- **JSON inputs as JavaScript expressions**: unquoted keys, `ObjectId()`, etc.
+- **Connection failure diagnostics**: per-stage (SSH / TCP / MongoDB) progress and failure reasons
+- **Multilingual UI**: 18 languages (Japanese, English, Chinese Simplified/Traditional, Korean, Russian, Kazakh, Spanish, Portuguese, French, German, Italian, Dutch, Swedish, Norwegian, Arabic, Thai, Vietnamese)
+
+## Core features
+
+- Connect / disconnect (manage and duplicate multiple connection profiles)
+- Tree view of databases and collections; create and drop
+- Document list with pagination (50 docs per page); add, edit, delete
 - Authentication (username, password, auth DB)
 - TLS/SSL connections (CA cert, client cert, allow self-signed)
 - SSH tunnel connections (key-based or password authentication)
-- **Multilingual UI**: Japanese / English / 中文（简体）/ 中文（繁體）/ 한국어
+- Saved passwords are encrypted with AES-256-GCM
 
 ## Requirements
 
@@ -74,8 +108,11 @@ Each connection profile supports the following options. All optional fields can 
 | Auth | Username, password, and auth DB |
 | TLS | CA certificate, client certificate, allow self-signed |
 | SSH Tunnel | Host, port, username, key file or password |
+| Environment tier | Production / Staging / Development (unit to which operation policies apply) |
 
-Connection profiles are stored at `~/.local/share/info.okazoh.okzmongo/connections.json`.
+Connection profiles are stored at `~/.local/share/info.okazoh.okzmongo/connections.json` (passwords are encrypted).
+
+> **About policies**: operation policies are a UI guardrail against mistakes, stored in `localStorage` as app settings (not a security boundary). Use them together with database-side access control.
 
 ## Language Settings
 
