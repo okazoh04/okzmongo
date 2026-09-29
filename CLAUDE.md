@@ -45,7 +45,7 @@ React UI
 | `crypto.rs` | AES-256-GCM によるパスワード暗号化/復号（`enc:` プレフィックスで暗号化済みを識別） |
 | `connect_error.rs` | 接続失敗の原因分類（`ConnectError { stage, category, detail }`）・TCP到達性チェック・進捗イベント (`connect-progress`) の発行 |
 | `commands/connection.rs` | 接続管理：SSH トンネル起動・TLS オプション構築・MongoDB ping 確認、接続設定の保存/読み込み |
-| `commands/database.rs` | DB/コレクション操作：find・count・insert・update・delete・drop・create |
+| `commands/database.rs` | DB/コレクション操作：find・count・insert・update・delete・drop・create。`get_field_names` は先頭100件をサンプリングし、ネストを `a.b` 形式（深さ4・最大500件）で返す |
 | `query_log.rs` | `database.rs` の各コマンドが実行したクエリ（mongosh 風表記＋実際に送った Extended JSON・所要時間・成否）を `query-log` イベントでフロントへ通知（`Recorder`）。export/import・一覧取得・フィールド名取得は対象外 |
 | `commands/export.rs` | コレクション単位のインポート/エクスポート（NDJSON）+ DB 単位のダンプ/リストア（ZIP） |
 | `lib.rs` | `tauri::generate_handler![]` でコマンド登録、起動時に暗号化鍵ロードと接続設定の復元 |
@@ -80,6 +80,7 @@ React UI
 | `components/DocumentEditor.tsx` | ドキュメント追加・編集モーダル（JSON テキストエリア） |
 | `components/ExportImport.tsx` | コレクション単位のエクスポート/インポートUI |
 | `components/QueryLogPanel.tsx` | 画面下部のクエリ履歴パネル（時系列・クリックで展開/コピー）。イベント購読と直近500件の保持は `App.tsx`、開閉は `localStorage` の `okzmongo-query-log` |
+| `lib/assist.ts` / `lib/useContentAssist.tsx` | コンテンツアシスト（純粋ロジック / 共通フック）。クエリパッド（`query` モード：コレクション・メソッド雛形・演算子・フィールド・ヘルパー）、フィルタ欄・ドキュメント編集JSON・`JsonEditDialog`（`expr` モード：キー位置でフィールド名、値位置で `ObjectId()` 等、`$` で演算子）で共用。`Ctrl+Space` で強制表示、Tab/Enter で確定。フィールド名は `get_field_names`（ネストは `a.b` のドット形式、30秒キャッシュ） |
 | `components/About.tsx` | Aboutダイアログ |
 
 **レイアウト**: CSS Flexbox のみ（外部UIライブラリなし）。CSS 変数でテーマ管理（`src/index.css` の `:root`）。

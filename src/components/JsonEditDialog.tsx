@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "../i18n";
 import { exprErrorMessage, formatMongoExpr, parseMongoExpr } from "../lib/mongoExpr";
+import { useContentAssist } from "../lib/useContentAssist";
 
 interface Props {
   title: string;
@@ -13,6 +14,8 @@ export default function JsonEditDialog({ title, value, onSave, onClose }: Props)
   const { t } = useI18n();
   const [json, setJson] = useState(formatMongoExpr(value));
   const [error, setError] = useState<string | null>(null);
+  // 接続・コレクションの文脈が無いので、演算子とヘルパー（ObjectId 等）のみ補完する
+  const assist = useContentAssist({ mode: "expr", setValue: setJson });
 
   const handleOk = () => {
     let parsed: unknown;
@@ -71,9 +74,12 @@ export default function JsonEditDialog({ title, value, onSave, onClose }: Props)
         )}
 
         <textarea
+          ref={assist.ref as React.RefObject<HTMLTextAreaElement>}
           value={json}
-          onChange={(e) => setJson(e.target.value)}
+          onChange={assist.onInput}
+          onBlur={assist.onBlur}
           onKeyDown={(e) => {
+            if (assist.onKeyDown(e)) return;
             if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
               e.preventDefault();
               handleOk();
@@ -92,6 +98,7 @@ export default function JsonEditDialog({ title, value, onSave, onClose }: Props)
           }}
           spellCheck={false}
         />
+        {assist.dropdown}
 
         <div
           style={{

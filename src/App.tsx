@@ -11,6 +11,7 @@ import PolicySettings from "./components/PolicySettings";
 import QueryLogPanel, { QueryLogEntry } from "./components/QueryLogPanel";
 import { ENV_COLOR } from "./policy";
 import { exprErrorMessage, mongoExprToJson } from "./lib/mongoExpr";
+import { useContentAssist } from "./lib/useContentAssist";
 
 const SIDEBAR_MIN_WIDTH = 160;
 const SIDEBAR_MAX_WIDTH = 600;
@@ -36,6 +37,14 @@ export default function App() {
   const isResizingSidebar = useRef(false);
   const [queryLog, setQueryLog] = useState<QueryLogEntry[]>([]);
   const [showQueryLog, setShowQueryLog] = useState(() => localStorage.getItem("okzmongo-query-log") === "1");
+
+  const filterAssist = useContentAssist({
+    mode: "expr",
+    connectionId: selected?.connectionId,
+    db: selected?.db,
+    collection: selected?.collection,
+    setValue: v => { setFilterInput(v); setFilterError(null); },
+  });
 
   // フィルタ欄は JavaScript 式（キーの "" 省略・ObjectId(...) 等）で書け、Extended JSON に変換して渡す
   const applyFilter = () => {
@@ -249,15 +258,21 @@ export default function App() {
                 {activeTab === "documents" && selected.collection !== null && (
                   <div style={{ flex: 1, display: "flex", gap: 6, padding: "4px 12px 4px 4px" }}>
                     <input
+                      ref={filterAssist.ref as React.RefObject<HTMLInputElement>}
                       value={filterInput}
-                      onChange={e => { setFilterInput(e.target.value); setFilterError(null); }}
+                      onChange={filterAssist.onInput}
+                      onBlur={filterAssist.onBlur}
                       placeholder='{field: "value"}'
                       style={{
                         flex: 1, fontFamily: "monospace",
                         ...(filterError ? { borderColor: "var(--red)" } : {}),
                       }}
-                      onKeyDown={e => e.key === "Enter" && applyFilter()}
+                      onKeyDown={e => {
+                        if (filterAssist.onKeyDown(e)) return;
+                        if (e.key === "Enter") applyFilter();
+                      }}
                     />
+                    {filterAssist.dropdown}
                     <button className="primary" onClick={applyFilter}>{t.search}</button>
                     <button onClick={() => { setFilterInput("{}"); setFilterJson("{}"); setFilterError(null); }}>{t.clear}</button>
                     {filterError && (

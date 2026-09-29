@@ -289,6 +289,40 @@ pub async fn run_aggregate(
     rec.finish(res, |r| format!("docs: {}", r.len()))
 }
 
+/// ネストしたフィールドを "a.b.c" 形式のパスとして集める（補完用）。
+/// 配列は要素のドキュメントを同じパスで辿る（MongoDB のドット記法と同様）。
+const FIELD_PATH_MAX_DEPTH: usize = 4;
+const FIELD_PATH_MAX_COUNT: usize = 500;
+
+fn collect_field_paths(
+    doc: &Document,
+    prefix: &str,
+    depth: usize,
+    out: &mut std::collections::HashSet<String>,
+) {
+    for (key, value) in doc {
+        if out.len() >= FIELD_PATH_MAX_COUNT {
+            return;
+        }
+        let path = if prefix.is_empty() { key.clone() } else { format!("{prefix}.{key}") };
+        out.insert(path.clone());
+        if depth + 1 >= FIELD_PATH_MAX_DEPTH {
+            continue;
+        }
+        match value {
+            bson::Bson::Document(d) => collect_field_paths(d, &path, depth + 1, out),
+            bson::Bson::Array(items) => {
+                for item in items {
+                    if let bson::Bson::Document(d) = item {
+                        collect_field_paths(d, &path, depth + 1, out);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 #[tauri::command]
 pub async fn get_field_names(
     state: State<'_, AppState>,
@@ -314,9 +348,7 @@ pub async fn get_field_names(
         .map_err(|e| format!("カーソル読み込み失敗: {e}"))?
     {
         let doc = raw_doc_to_document(raw_doc)?;
-        for key in doc.keys() {
-            fields.insert(key.clone());
-        }
+        collect_field_paths(&doc, "", 0, &mut fields);
     }
 
     let mut field_list: Vec<String> = fields.into_iter().collect();

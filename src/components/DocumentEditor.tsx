@@ -6,6 +6,7 @@ import { unwrapValue } from "../lib/bsonTypes";
 import { usePolicy } from "../PolicyProvider";
 import { EnvironmentTier } from "../types";
 import { exprErrorMessage, formatMongoExpr, parseMongoExpr } from "../lib/mongoExpr";
+import { useContentAssist } from "../lib/useContentAssist";
 
 interface Props {
   connectionId: string;
@@ -46,6 +47,7 @@ export default function DocumentEditor({
   const [json, setJson] = useState(formatMongoExpr(initialDoc));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const assist = useContentAssist({ mode: "expr", connectionId, db, collection, setValue: setJson });
 
   const switchTab = (next: Tab) => {
     if (next === "json" && tab === "tree") {
@@ -167,10 +169,14 @@ export default function DocumentEditor({
             <DocumentTree value={draftDoc} onChange={setDraftDoc} onSave={handleSave} />
           </div>
         ) : (
+          <>
           <textarea
+            ref={assist.ref as React.RefObject<HTMLTextAreaElement>}
             value={json}
-            onChange={(e) => setJson(e.target.value)}
+            onChange={assist.onInput}
+            onBlur={assist.onBlur}
             onKeyDown={(e) => {
+              if (assist.onKeyDown(e)) return;
               if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 handleSave();
@@ -189,6 +195,8 @@ export default function DocumentEditor({
             }}
             spellCheck={false}
           />
+          {assist.dropdown}
+          </>
         )}
 
         <div style={{
