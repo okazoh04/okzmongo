@@ -157,6 +157,9 @@ const ru = {
   policyWarnTitle: "Требуется подтверждение",
   policyWarnMessage: 'Вы собираетесь выполнить операцию «{op}» в окружении {env}. Продолжить?',
   policyProceed: "Продолжить",
+  queryLog: "Журнал запросов",
+  queryLogEmpty: "Запросов пока нет",
+  queryLogCopy: "Копировать",
 };
 
 export default ru;

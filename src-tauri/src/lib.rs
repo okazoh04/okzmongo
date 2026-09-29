@@ -1,6 +1,7 @@
 mod commands;
 mod connect_error;
 mod crypto;
+mod query_log;
 mod ssh_tunnel;
 mod state;
 

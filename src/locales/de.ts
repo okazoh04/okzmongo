@@ -157,6 +157,9 @@ const de = {
   policyWarnTitle: "Bestätigung erforderlich",
   policyWarnMessage: 'Du bist dabei, „{op}“ in der Umgebung {env} auszuführen. Bist du sicher?',
   policyProceed: "Fortfahren",
+  queryLog: "Abfrageprotokoll",
+  queryLogEmpty: "Noch keine Abfragen",
+  queryLogCopy: "Kopieren",
 };
 
 export default de;

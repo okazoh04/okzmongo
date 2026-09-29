@@ -157,6 +157,9 @@ const fr = {
   policyWarnTitle: "Confirmation requise",
   policyWarnMessage: 'Vous êtes sur le point d\'effectuer « {op} » dans l\'environnement {env}. Confirmez-vous ?',
   policyProceed: "Continuer",
+  queryLog: "Historique des requêtes",
+  queryLogEmpty: "Aucune requête pour l'instant",
+  queryLogCopy: "Copier",
 };
 
 export default fr;

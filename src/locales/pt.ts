@@ -157,6 +157,9 @@ const pt = {
   policyWarnTitle: "Confirmação necessária",
   policyWarnMessage: 'Você está prestes a executar "{op}" no ambiente {env}. Tem certeza?',
   policyProceed: "Prosseguir",
+  queryLog: "Histórico de consultas",
+  queryLogEmpty: "Nenhuma consulta ainda",
+  queryLogCopy: "Copiar",
 };
 
 export default pt;

@@ -157,6 +157,9 @@ const zhCN = {
   policyWarnTitle: "需要确认",
   policyWarnMessage: "您即将在{env}环境中执行「{op}」，确定吗？",
   policyProceed: "继续执行",
+  queryLog: "查询日志",
+  queryLogEmpty: "暂无查询",
+  queryLogCopy: "复制",
 };
 
 export default zhCN;

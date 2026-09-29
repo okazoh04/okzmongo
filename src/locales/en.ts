@@ -157,6 +157,9 @@ const en = {
   policyWarnTitle: "Confirmation Required",
   policyWarnMessage: 'You are about to perform "{op}" in the {env} environment. Are you sure?',
   policyProceed: "Proceed",
+  queryLog: "Query Log",
+  queryLogEmpty: "No queries yet",
+  queryLogCopy: "Copy",
 };
 
 export default en;

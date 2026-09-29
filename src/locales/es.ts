@@ -157,6 +157,9 @@ const es = {
   policyWarnTitle: "Se requiere confirmación",
   policyWarnMessage: 'Vas a realizar "{op}" en el entorno {env}. ¿Estás seguro?',
   policyProceed: "Continuar",
+  queryLog: "Historial de consultas",
+  queryLogEmpty: "Aún no hay consultas",
+  queryLogCopy: "Copiar",
 };
 
 export default es;

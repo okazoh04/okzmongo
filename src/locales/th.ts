@@ -157,6 +157,9 @@ const th = {
   policyWarnTitle: "ต้องการการยืนยัน",
   policyWarnMessage: 'คุณกำลังจะดำเนินการ "{op}" ในสภาพแวดล้อม {env} ยืนยันหรือไม่?',
   policyProceed: "ดำเนินการต่อ",
+  queryLog: "ประวัติคำสั่งค้นหา",
+  queryLogEmpty: "ยังไม่มีคำสั่ง",
+  queryLogCopy: "คัดลอก",
 };
 
 export default th;

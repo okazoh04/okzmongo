@@ -157,6 +157,9 @@ const ja = {
   policyWarnTitle: "確認が必要です",
   policyWarnMessage: "{env}環境で「{op}」を実行しようとしています。よろしいですか？",
   policyProceed: "実行する",
+  queryLog: "クエリ履歴",
+  queryLogEmpty: "まだクエリはありません",
+  queryLogCopy: "コピー",
 };
 
 export default ja;

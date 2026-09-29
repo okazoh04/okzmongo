@@ -157,6 +157,9 @@ const it = {
   policyWarnTitle: "Conferma richiesta",
   policyWarnMessage: 'Stai per eseguire "{op}" nell\'ambiente {env}. Confermi?',
   policyProceed: "Procedi",
+  queryLog: "Cronologia query",
+  queryLogEmpty: "Nessuna query per ora",
+  queryLogCopy: "Copia",
 };
 
 export default it;

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { ConnectionConfig, SelectedItem } from "./types";
 import { useI18n, LOCALES } from "./i18n";
 import Sidebar from "./components/Sidebar";
@@ -7,11 +8,14 @@ import DocumentList from "./components/DocumentList";
 import QueryPad from "./components/QueryPad";
 import About from "./components/About";
 import PolicySettings from "./components/PolicySettings";
+import QueryLogPanel, { QueryLogEntry } from "./components/QueryLogPanel";
 import { ENV_COLOR } from "./policy";
 import { exprErrorMessage, mongoExprToJson } from "./lib/mongoExpr";
 
 const SIDEBAR_MIN_WIDTH = 160;
 const SIDEBAR_MAX_WIDTH = 600;
+// メモリ肥大を避けるため、保持する履歴は直近この件数まで
+const QUERY_LOG_MAX = 500;
 
 export default function App() {
   const { t, locale, setLocale } = useI18n();
@@ -30,6 +34,8 @@ export default function App() {
     return saved >= SIDEBAR_MIN_WIDTH && saved <= SIDEBAR_MAX_WIDTH ? saved : 260;
   });
   const isResizingSidebar = useRef(false);
+  const [queryLog, setQueryLog] = useState<QueryLogEntry[]>([]);
+  const [showQueryLog, setShowQueryLog] = useState(() => localStorage.getItem("okzmongo-query-log") === "1");
 
   // フィルタ欄は JavaScript 式（キーの "" 省略・ObjectId(...) 等）で書け、Extended JSON に変換して渡す
   const applyFilter = () => {
@@ -55,6 +61,21 @@ export default function App() {
     loadConnections();
     loadConnectedIds();
   }, []);
+
+  // パネルを閉じていても履歴は溜め続けるため、購読は常時行う
+  useEffect(() => {
+    const unlisten = listen<QueryLogEntry>("query-log", e => {
+      setQueryLog(prev => [...prev, e.payload].slice(-QUERY_LOG_MAX));
+    });
+    return () => { unlisten.then(fn => fn()); };
+  }, []);
+
+  const toggleQueryLog = () => {
+    setShowQueryLog(v => {
+      localStorage.setItem("okzmongo-query-log", v ? "0" : "1");
+      return !v;
+    });
+  };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -283,6 +304,15 @@ export default function App() {
         </div>
       </div>
 
+      {showQueryLog && (
+        <QueryLogPanel
+          entries={queryLog}
+          connectionName={id => connections.find(c => c.id === id)?.name ?? id}
+          onClear={() => setQueryLog([])}
+          onClose={toggleQueryLog}
+        />
+      )}
+
       {/* ステータスバー */}
       <div style={{
         background: "var(--bg3)",
@@ -302,6 +332,13 @@ export default function App() {
             fontSize: 14, padding: "0 4px", color: "var(--text-muted)", lineHeight: 1,
           }}
         >🌐</button>
+        <button
+          onClick={toggleQueryLog}
+          style={{
+            background: "none", border: "none", cursor: "pointer", fontSize: 12, padding: "0 6px",
+            color: showQueryLog ? "var(--accent)" : "var(--text-muted)",
+          }}
+        >{t.queryLog} ({queryLog.length})</button>
         {showLangPicker && (
           <>
             <div

@@ -157,6 +157,9 @@ const nl = {
   policyWarnTitle: "Bevestiging vereist",
   policyWarnMessage: 'U staat op het punt "{op}" uit te voeren in de omgeving {env}. Weet u het zeker?',
   policyProceed: "Doorgaan",
+  queryLog: "Querylogboek",
+  queryLogEmpty: "Nog geen queries",
+  queryLogCopy: "Kopiëren",
 };
 
 export default nl;

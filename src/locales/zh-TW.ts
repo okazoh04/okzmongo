@@ -157,6 +157,9 @@ const zhTW = {
   policyWarnTitle: "需要確認",
   policyWarnMessage: "您即將在{env}環境中執行「{op}」，確定嗎？",
   policyProceed: "繼續執行",
+  queryLog: "查詢記錄",
+  queryLogEmpty: "尚無查詢",
+  queryLogCopy: "複製",
 };
 
 export default zhTW;

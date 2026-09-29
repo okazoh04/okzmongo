@@ -157,6 +157,9 @@ const vi = {
   policyWarnTitle: "Cần xác nhận",
   policyWarnMessage: 'Bạn sắp thực hiện "{op}" trong môi trường {env}. Bạn có chắc chắn không?',
   policyProceed: "Tiếp tục",
+  queryLog: "Nhật ký truy vấn",
+  queryLogEmpty: "Chưa có truy vấn nào",
+  queryLogCopy: "Sao chép",
 };
 
 export default vi;

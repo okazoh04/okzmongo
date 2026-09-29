@@ -157,6 +157,9 @@ const ko = {
   policyWarnTitle: "확인이 필요합니다",
   policyWarnMessage: "{env} 환경에서 \"{op}\" 작업을 실행하려고 합니다. 계속하시겠습니까?",
   policyProceed: "계속 진행",
+  queryLog: "쿼리 기록",
+  queryLogEmpty: "아직 쿼리가 없습니다",
+  queryLogCopy: "복사",
 };
 
 export default ko;

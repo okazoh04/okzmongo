@@ -46,6 +46,7 @@ React UI
 | `connect_error.rs` | 接続失敗の原因分類（`ConnectError { stage, category, detail }`）・TCP到達性チェック・進捗イベント (`connect-progress`) の発行 |
 | `commands/connection.rs` | 接続管理：SSH トンネル起動・TLS オプション構築・MongoDB ping 確認、接続設定の保存/読み込み |
 | `commands/database.rs` | DB/コレクション操作：find・count・insert・update・delete・drop・create |
+| `query_log.rs` | `database.rs` の各コマンドが実行したクエリ（mongosh 風表記＋実際に送った Extended JSON・所要時間・成否）を `query-log` イベントでフロントへ通知（`Recorder`）。export/import・一覧取得・フィールド名取得は対象外 |
 | `commands/export.rs` | コレクション単位のインポート/エクスポート（NDJSON）+ DB 単位のダンプ/リストア（ZIP） |
 | `lib.rs` | `tauri::generate_handler![]` でコマンド登録、起動時に暗号化鍵ロードと接続設定の復元 |
 
@@ -78,6 +79,7 @@ React UI
 | `components/DocumentList.tsx` | ドキュメント一覧・ページネーション（50件）・エクスポート/インポートボタン統合 |
 | `components/DocumentEditor.tsx` | ドキュメント追加・編集モーダル（JSON テキストエリア） |
 | `components/ExportImport.tsx` | コレクション単位のエクスポート/インポートUI |
+| `components/QueryLogPanel.tsx` | 画面下部のクエリ履歴パネル（時系列・クリックで展開/コピー）。イベント購読と直近500件の保持は `App.tsx`、開閉は `localStorage` の `okzmongo-query-log` |
 | `components/About.tsx` | Aboutダイアログ |
 
 **レイアウト**: CSS Flexbox のみ（外部UIライブラリなし）。CSS 変数でテーマ管理（`src/index.css` の `:root`）。

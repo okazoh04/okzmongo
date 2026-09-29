@@ -157,6 +157,9 @@ const ar = {
   policyWarnTitle: "التأكيد مطلوب",
   policyWarnMessage: 'أنت على وشك تنفيذ "{op}" في بيئة {env}. هل أنت متأكد؟',
   policyProceed: "متابعة",
+  queryLog: "سجل الاستعلامات",
+  queryLogEmpty: "لا توجد استعلامات بعد",
+  queryLogCopy: "نسخ",
 };
 
 export default ar;

@@ -157,6 +157,9 @@ const sv = {
   policyWarnTitle: "Bekräftelse krävs",
   policyWarnMessage: 'Du är på väg att utföra "{op}" i miljön {env}. Är du säker?',
   policyProceed: "Fortsätt",
+  queryLog: "Frågelogg",
+  queryLogEmpty: "Inga frågor än",
+  queryLogCopy: "Kopiera",
 };
 
 export default sv;

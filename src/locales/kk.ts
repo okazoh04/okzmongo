@@ -157,6 +157,9 @@ const kk = {
   policyWarnTitle: "Растау қажет",
   policyWarnMessage: 'Сіз {env} ортасында "{op}" әрекетін орындамақшысыз. Сенімдісіз бе?',
   policyProceed: "Жалғастыру",
+  queryLog: "Сұраныстар журналы",
+  queryLogEmpty: "Әзірге сұраныс жоқ",
+  queryLogCopy: "Көшіру",
 };
 
 export default kk;

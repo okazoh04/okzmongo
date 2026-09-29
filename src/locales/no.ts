@@ -157,6 +157,9 @@ const no = {
   policyWarnTitle: "Bekreftelse kreves",
   policyWarnMessage: 'Du er i ferd med å utføre "{op}" i miljøet {env}. Er du sikker?',
   policyProceed: "Fortsett",
+  queryLog: "Spørringslogg",
+  queryLogEmpty: "Ingen spørringer ennå",
+  queryLogCopy: "Kopier",
 };
 
 export default no;
