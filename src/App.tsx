@@ -8,6 +8,7 @@ import QueryPad from "./components/QueryPad";
 import About from "./components/About";
 import PolicySettings from "./components/PolicySettings";
 import { ENV_COLOR } from "./policy";
+import { exprErrorMessage, mongoExprToJson } from "./lib/mongoExpr";
 
 const SIDEBAR_MIN_WIDTH = 160;
 const SIDEBAR_MAX_WIDTH = 600;
@@ -19,6 +20,7 @@ export default function App() {
   const [selected, setSelected] = useState<SelectedItem | null>(null);
   const [filterJson, setFilterJson] = useState("{}");
   const [filterInput, setFilterInput] = useState("{}");
+  const [filterError, setFilterError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"documents" | "query">("documents");
   const [showAbout, setShowAbout] = useState(false);
   const [showPolicySettings, setShowPolicySettings] = useState(false);
@@ -28,6 +30,16 @@ export default function App() {
     return saved >= SIDEBAR_MIN_WIDTH && saved <= SIDEBAR_MAX_WIDTH ? saved : 260;
   });
   const isResizingSidebar = useRef(false);
+
+  // フィルタ欄は JavaScript 式（キーの "" 省略・ObjectId(...) 等）で書け、Extended JSON に変換して渡す
+  const applyFilter = () => {
+    try {
+      setFilterJson(mongoExprToJson(filterInput, "{}"));
+      setFilterError(null);
+    } catch (e) {
+      setFilterError(`${t.invalidJson}: ${exprErrorMessage(e)}`);
+    }
+  };
 
   const loadConnections = async () => {
     const conns: ConnectionConfig[] = await invoke("list_connections");
@@ -217,13 +229,22 @@ export default function App() {
                   <div style={{ flex: 1, display: "flex", gap: 6, padding: "4px 12px 4px 4px" }}>
                     <input
                       value={filterInput}
-                      onChange={e => setFilterInput(e.target.value)}
-                      placeholder='{"field": "value"}'
-                      style={{ flex: 1, fontFamily: "monospace" }}
-                      onKeyDown={e => e.key === "Enter" && setFilterJson(filterInput)}
+                      onChange={e => { setFilterInput(e.target.value); setFilterError(null); }}
+                      placeholder='{field: "value"}'
+                      style={{
+                        flex: 1, fontFamily: "monospace",
+                        ...(filterError ? { borderColor: "var(--red)" } : {}),
+                      }}
+                      onKeyDown={e => e.key === "Enter" && applyFilter()}
                     />
-                    <button className="primary" onClick={() => setFilterJson(filterInput)}>{t.search}</button>
-                    <button onClick={() => { setFilterInput("{}"); setFilterJson("{}"); }}>{t.clear}</button>
+                    <button className="primary" onClick={applyFilter}>{t.search}</button>
+                    <button onClick={() => { setFilterInput("{}"); setFilterJson("{}"); setFilterError(null); }}>{t.clear}</button>
+                    {filterError && (
+                      <span title={filterError} style={{
+                        alignSelf: "center", maxWidth: 240, fontSize: 11, color: "var(--red)",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>{filterError}</span>
+                    )}
                   </div>
                 )}
               </div>

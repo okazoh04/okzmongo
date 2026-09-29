@@ -5,6 +5,7 @@ import DocumentTree from "./tree/DocumentTree";
 import { unwrapValue } from "../lib/bsonTypes";
 import { usePolicy } from "../PolicyProvider";
 import { EnvironmentTier } from "../types";
+import { exprErrorMessage, formatMongoExpr, parseMongoExpr } from "../lib/mongoExpr";
 
 interface Props {
   connectionId: string;
@@ -18,6 +19,15 @@ interface Props {
 }
 
 type Tab = "tree" | "json";
+
+// ドキュメントはオブジェクトでなければならない
+function parseDoc(src: string): Record<string, unknown> {
+  const v = parseMongoExpr(src);
+  if (typeof v !== "object" || v === null || Array.isArray(v)) {
+    throw new Error("ドキュメントは { ... } で書いてください");
+  }
+  return v as Record<string, unknown>;
+}
 
 export default function DocumentEditor({
   connectionId,
@@ -33,19 +43,19 @@ export default function DocumentEditor({
   const { guard } = usePolicy();
   const [tab, setTab] = useState<Tab>("tree");
   const [draftDoc, setDraftDoc] = useState<Record<string, unknown>>(initialDoc);
-  const [json, setJson] = useState(JSON.stringify(initialDoc, null, 2));
+  const [json, setJson] = useState(formatMongoExpr(initialDoc));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const switchTab = (next: Tab) => {
     if (next === "json" && tab === "tree") {
-      setJson(JSON.stringify(draftDoc, null, 2));
+      setJson(formatMongoExpr(draftDoc));
     }
     if (next === "tree" && tab === "json") {
       try {
-        setDraftDoc(JSON.parse(json));
-      } catch {
-        setError(t.invalidJson);
+        setDraftDoc(parseDoc(json));
+      } catch (e) {
+        setError(`${t.invalidJson}: ${exprErrorMessage(e)}`);
         return;
       }
     }
@@ -57,9 +67,9 @@ export default function DocumentEditor({
     let parsed: Record<string, unknown>;
     if (tab === "json") {
       try {
-        parsed = JSON.parse(json);
-      } catch {
-        setError(t.invalidJson);
+        parsed = parseDoc(json);
+      } catch (e) {
+        setError(`${t.invalidJson}: ${exprErrorMessage(e)}`);
         return;
       }
     } else {

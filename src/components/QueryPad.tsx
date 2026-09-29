@@ -5,6 +5,7 @@ import getCaretCoordinates from "textarea-caret";
 import DocumentTree from "./tree/DocumentTree";
 import { usePolicy } from "../PolicyProvider";
 import { EnvironmentTier } from "../types";
+import { exprErrorMessage, mongoExprToJson } from "../lib/mongoExpr";
 
 interface Props {
   connectionId: string;
@@ -68,33 +69,12 @@ interface Parsed {
   args: string[];
 }
 
-// mongosh でよく使われるコンストラクタを Extended JSON 形式へ変換するスタブ。
-// バックエンド（bson_json.rs）が対応する $oid/$date/$numberInt/$numberLong のみ実装。
-const MONGO_SHELL_GLOBALS = {
-  ObjectId: (id?: string) => ({ $oid: id ?? "000000000000000000000000" }),
-  ISODate: (s?: string) => ({ $date: s ? new Date(s).getTime() : Date.now() }),
-  Date: (s?: string) => ({ $date: s ? new Date(s).getTime() : Date.now() }),
-  NumberLong: (v: string | number) => ({ $numberLong: String(v) }),
-  NumberInt: (v: string | number) => ({ $numberInt: String(v) }),
-};
-
-// 引数の文字列を実際に JS として評価する（mongosh 同様、裸キーや ObjectId(...) 等をサポート）。
-// 評価コンテキストは webview の JS 実行環境そのものなので、任意コード実行のリスクは
-// 「ユーザーが自分で打ち込んだクエリをその場で実行する」という mongosh と同じ信頼境界。
-function evalMongoExpr(src: string): unknown {
-  const names = Object.keys(MONGO_SHELL_GLOBALS);
-  const fn = new Function(...names, `"use strict"; return (${src});`);
-  return fn(...names.map(n => (MONGO_SHELL_GLOBALS as Record<string, unknown>)[n]));
-}
-
 // 引数文字列を Extended JSON 文字列に変換する。空なら fallback をそのまま返す。
 function argToJson(argStr: string | undefined, fallback: string): string {
-  const s = (argStr ?? "").trim();
-  if (!s) return fallback;
   try {
-    return JSON.stringify(evalMongoExpr(s));
+    return mongoExprToJson(argStr ?? "", fallback);
   } catch (e) {
-    throw new Error(`式の評価に失敗しました: ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(`式の評価に失敗しました: ${exprErrorMessage(e)}`);
   }
 }
 
@@ -366,7 +346,7 @@ export default function QueryPad({ connectionId, db, initialQuery, environment }
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onSelect={e => updateCandidates(query, (e.target as HTMLTextAreaElement).selectionStart)}
-            placeholder={`db.collection.find({"field": "value"})\ndb.collection.aggregate([{"$match": {...}}])\ndb.collection.countDocuments({})\ndb.collection.insertOne({...})\ndb.collection.updateOne({filter}, {update})\ndb.collection.deleteOne({filter})`}
+            placeholder={`db.collection.find({field: "value"})\ndb.collection.aggregate([{$match: {...}}])\ndb.collection.countDocuments({})\ndb.collection.insertOne({...})\ndb.collection.updateOne({filter}, {update})\ndb.collection.deleteOne({filter})`}
             rows={5}
             style={{
               width: "100%", fontFamily: "'JetBrains Mono', 'Fira Code', monospace",

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useI18n } from "../i18n";
+import { exprErrorMessage, formatMongoExpr, parseMongoExpr } from "../lib/mongoExpr";
 
 interface Props {
   title: string;
@@ -10,15 +11,15 @@ interface Props {
 
 export default function JsonEditDialog({ title, value, onSave, onClose }: Props) {
   const { t } = useI18n();
-  const [json, setJson] = useState(JSON.stringify(value, null, 2));
+  const [json, setJson] = useState(formatMongoExpr(value));
   const [error, setError] = useState<string | null>(null);
 
   const handleOk = () => {
     let parsed: unknown;
     try {
-      parsed = JSON.parse(json);
-    } catch {
-      setError(t.invalidJson);
+      parsed = parseMongoExpr(json);
+    } catch (e) {
+      setError(`${t.invalidJson}: ${exprErrorMessage(e)}`);
       return;
     }
     onSave(parsed);
